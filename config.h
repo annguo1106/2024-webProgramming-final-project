@@ -24,7 +24,7 @@ typedef struct Order {
     int op;  // 0 for icecream, 1 for hamburger
     IceCream icecream;
     Burger burger;
-};
+} Order;
 
 typedef struct C2S {
     int op;

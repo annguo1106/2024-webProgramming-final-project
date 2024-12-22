@@ -1,111 +1,89 @@
-// ui.cpp
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#include <iostream>
-#include <vector>
-#include <string>
+# include <SFML/Graphics.hpp>
+# include <SFML/Window.hpp>
+# include <SFML/System.hpp>
+# include <mutex>
+# include <bits/stdc++.h>
+# include "ui.h"
 
-// Game constants
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
-const sf::Vector2f ITEM_SIZE(80.f, 80.f);
+int ui_running = 1;
+std::mutex msg_mutex;
+// std::queue<std::string> msg_queue;
+std::string msg = "-1";
 
-struct GameItem {
-    sf::RectangleShape shape;
-    std::string name;
-    bool isDragging = false;
-};
+void add_msg(const char* message) {
+    std::lock_guard<std::mutex> lock(msg_mutex);
+    msg = std::string(message);
+    // msg_queue.push(std::string(message));
+}
 
-int main() {
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game Screen");
+void run_ui() {
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Cooking Master");
+    window.setVerticalSyncEnabled(false);
 
-    // Font setup
+    if (!window.isOpen()) {
+        fprintf(stderr, "Failed to create the SFML window!\n");
+        return;
+    }
+    
     sf::Font font;
     if (!font.loadFromFile("arial.ttf")) {
-        std::cerr << "Error loading font" << std::endl;
-        return -1;
+        fprintf(stderr, "Error: Could not load font file (arial.ttf)\n");
+        ui_running = 0;
+        return; // Font file not found
     }
 
-    // Text setup
-    sf::Text orderText("Take Orders", font, 24);
-    orderText.setPosition(300, 20);
-    orderText.setFillColor(sf::Color::White);
+    // std::vector<std::string> displayed_messages;
+    std::string displayed_message;
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(20);
+    text.setFillColor(sf::Color::White);
 
-    // Items setup
-    std::vector<GameItem> items;
-    std::vector<std::string> itemNames = {"lettuce", "tomato", "meat", "bread", "cone", "1st flavor", "2st flavor"};
-    std::vector<sf::Color> itemColors = {sf::Color::Green, sf::Color::Red, sf::Color(139, 69, 19), sf::Color::Yellow, sf::Color(255, 223, 186), sf::Color(255, 228, 196), sf::Color(210, 105, 30)};
-
-    for (size_t i = 0; i < itemNames.size(); ++i) {
-        GameItem item;
-        item.shape.setSize(ITEM_SIZE);
-        item.shape.setFillColor(itemColors[i]);
-        item.shape.setPosition(50.f + (i % 4) * 100.f, 100.f + (i / 4) * 100.f);
-        item.name = itemNames[i];
-        items.push_back(item);
-    }
-
-    // Tool areas
-    sf::RectangleShape assemblyArea(sf::Vector2f(120.f, 120.f));
-    assemblyArea.setPosition(300.f, 400.f);
-    assemblyArea.setFillColor(sf::Color::Blue);
-
-    sf::RectangleShape choppingBoard(sf::Vector2f(120.f, 120.f));
-    choppingBoard.setPosition(450.f, 400.f);
-    choppingBoard.setFillColor(sf::Color(139, 69, 19));
-
-    sf::RectangleShape garbage(sf::Vector2f(120.f, 120.f));
-    garbage.setPosition(600.f, 400.f);
-    garbage.setFillColor(sf::Color::Black);
-
-    // Drag-and-drop logic
-    sf::Vector2f dragOffset;
-    GameItem* draggedItem = nullptr;
-
-    while (window.isOpen()) {
+    while (ui_running && window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
+                ui_running = 0;
                 window.close();
-
-            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
-                for (auto& item : items) {
-                    if (item.shape.getGlobalBounds().contains(mousePos)) {
-                        item.isDragging = true;
-                        dragOffset = mousePos - item.shape.getPosition();
-                        draggedItem = &item;
-                        break;
-                    }
-                }
             }
 
-            if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
-                if (draggedItem) {
-                    draggedItem->isDragging = false;
-                    draggedItem = nullptr;
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    int x = event.mouseButton.x;
+                    int y = event.mouseButton.y;
+                    char str[200];
+                    // displayed_message = "mouse pressed\n";
+                    snprintf(str, sizeof(str), "click at %d %d\n", x, y);
+                    displayed_message = str;
+                    user_input(x, y);
                 }
-            }
-
-            if (event.type == sf::Event::MouseMoved && draggedItem) {
-                sf::Vector2f mousePos(event.mouseMove.x, event.mouseMove.y);
-                draggedItem->shape.setPosition(mousePos - dragOffset);
             }
         }
 
-        // Clear and draw everything
-        window.clear();
-
-        window.draw(orderText);
-        for (const auto& item : items) {
-            window.draw(item.shape);
+        // Retrieve messages from the queue
+        {
+            std::lock_guard<std::mutex> lock(msg_mutex);
+            if (msg != "-1") {
+                displayed_message = msg;
+                msg = "-1";
+            }
+            // while (!msg_queue.empty()) {
+            //     displayed_messages.push_back(msg_queue.front());
+            //     msg_queue.pop();
+            // }
         }
-        window.draw(assemblyArea);
-        window.draw(choppingBoard);
-        window.draw(garbage);
 
+        // Render messages
+        window.clear(sf::Color::Black);
+        float y_offset = 10.0f;
+        // for (const auto& msg : displayed_messages) {
+        text.setString(displayed_message);
+        text.setPosition(10, y_offset);
+        window.draw(text);
+        y_offset += 30.0f; // Adjust for line spacing
+        // }
         window.display();
-    }
 
-    return 0;
+        // sf::sleep(sf::milliseconds(10));
+    }
 }
