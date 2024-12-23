@@ -18,6 +18,47 @@ void add_msg(S2C servInst) {
     // msg_queue.push(std::string(message));
 }
 
+int def_obj (string obj) {
+    if (obj == "l0") return 16;
+    if (obj == "l1") return 16;
+    if (obj == "t0") return 19;
+    if (obj == "t1") return 18;
+    if (obj == "m") return 17;
+    if (obj == "b") return 4;
+    if (obj == "c") return 12;
+    if (obj == "b1111") return 0;
+    if (obj == "b1011") return 1;
+    if (obj == "b0111") return 2;
+    if (obj == "b0011") return 3;
+    if (obj == "i0") return 13;
+    if (obj == "i1") return 14;
+    if (obj == "i2") return 15;
+    return 50;
+    // if (obj == "empty") return -1;
+}
+
+
+void move (int &x, int &y, int &tox, int &toy) {
+    if (x < tox) {
+        x += 5;
+        if (x > tox) x = tox;
+    }
+    else if (x > tox) {
+        x -= 5;
+        if (x < tox) x = tox;
+    }
+    if (x == tox && y < toy) {
+        y += 5;
+        if (y > toy) y = toy;
+    }
+    else if (x == tox && y > toy) {
+        y -= 5;
+        if (y < toy) y = toy;
+    }
+
+}
+
+
 void run_ui() {
     sf::RenderWindow window(sf::VideoMode(1200, 765), "Cooking Master");
     window.setVerticalSyncEnabled(false);
@@ -100,8 +141,6 @@ void run_ui() {
     cli1.setPosition(cli1x, cli1y);
     cli2.setPosition(cli2x, cli2y);
 
-
-
     vector<bool> showSp1(20, false);
     vector<bool> showSp2(20, false);
 
@@ -141,11 +180,78 @@ void run_ui() {
                 char str[50];
                 snprintf(str, sizeof(str), "%d", msg.op);
                 displayed_message = str;
+                int obj;
                 if (msg.op == 10) {  // update object status
-
+                    obj = def_obj(msg.object); 
+                    printf("obj is %d %s\n", obj, msg.object);
+                    printf("msg location %d\n", msg.location);
+                    if (msg.location) {  // not hand
+                        if (strcmp(msg.object, "empty") != 0) {
+                            printf("hi\n");
+                            if (msg.client == 1) showSp1[obj] = 1;
+                            else showSp2[obj] = 1;
+                        }
+                        else {  // clear obj
+                            printf("in clear sooooope\n");
+                            printf("clear object %d at %d, %d", obj, msg.toX, msg.toY);
+                            snprintf(str, sizeof(str), "clear obj %d", obj);
+                            displayed_message = str;
+                            if (msg.client == 1) {
+                                if (msg.toX <= 195) {  // clear on assemb
+                                    for (int i = 0; i < 20; i++)
+                                        if (spConf[i].x == 240) showSp1[i] = 0;
+                                }
+                                else {  // clear on chop
+                                    for (int i = 0; i < 20; i++) {
+                                        if (spConf[i].x == 123) showSp1[i] = 0;
+                                    }
+                                }
+                            }
+                            else {
+                                if (msg.toX <= 195) {  // clear on assemb
+                                    for (int i = 0; i < 20; i++)
+                                        if (spConf[i].x == 240) showSp2[i] = 0;
+                                }
+                                else {  // clear on chop
+                                    for (int i = 0; i < 20; i++) {
+                                        if (spConf[i].x == 123) showSp2[i] = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {  // update hand obj
+                        if (!obj) {  // clear
+                            if (msg.client == 1) {
+                                cli1take = 0; 
+                            }
+                            else {
+                                cli2take = 0;
+                            }
+                        }
+                        else {
+                            if (msg.client == 1) {
+                                cli1take = 1;
+                                cli1hand.setTexture(tx[obj]);
+                                cli1hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
+                            }
+                            else {
+                                cli2take = 1;
+                                cli2hand.setTexture(tx[obj]);
+                                cli2hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
+                            }
+                        }
+                    }
                 }
                 else if (msg.op == 11) { // move character
-
+                    if (msg.client == 1) {
+                        cli1tox = msg.toX;
+                        cli1toy = msg.toY;
+                    }
+                    else {
+                        cli2tox = msg.toX;
+                        cli2toy = msg.toY;
+                    }
                 }
                 else if (msg.op == 12) {  // update customer
 
@@ -157,6 +263,13 @@ void run_ui() {
                 msg.op = -1;
             }
         }
+
+        cli1.setPosition(cli1x, cli1y);
+        cli2.setPosition(cli2x, cli2y);
+        cli1hand.setPosition(cli1x, cli1y);
+        cli2hand.setPosition(cli2x, cli2y);
+        move(cli1x, cli1y, cli1tox, cli1toy);
+        move(cli2x, cli2y, cli2tox, cli2toy);
 
         // Render messages
         window.clear(sf::Color::Black);
@@ -186,3 +299,11 @@ void run_ui() {
         // sf::sleep(sf::milliseconds(10));
     }
 }
+
+
+
+// testcase
+/*
+10 1 130 687 l0 1
+
+*/

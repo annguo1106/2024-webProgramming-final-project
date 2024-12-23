@@ -81,48 +81,52 @@ void parse_server_inst (char* inst) {
 
 void location (int x, int y, int* location, char* object) {
     *location = 6;
+    strcpy(object, "0");
     if (x <= 90) {  // burger
         if (338 <= y && y <= 410) {  // lettuce
             if (premouseX <= 100 && 338 <= premouseY && premouseY <= 410) {
-                object = "l0";
+                strcpy(object, "l0");
                 *location = 40;
             }
         }
         else if (425 <= y && y <= 490) {  // tomato
             if (premouseX <= 100 && 425 <= premouseY && premouseY <= 490) {
-                object = "t0";
+                strcpy(object, "t0");
                 *location = 41;
             }
         }
         else if (505 <= y && y <= 575) {  // meat
             if (premouseX <= 100 && 505 <= premouseY && premouseY <= 575) {
-                object = "m";
+                strcpy(object, "m");
                 *location = 42;
             }
         }
         else if (590 <= y && y <= 660) {  // bread
             if (premouseX <= 100 && 590 <= premouseY && premouseY <= 660) {
-                object = "b";
+                strcpy(object, "b");
                 *location = 43;
             }
         }
     }
-    else if (x >= 590) {  // ice cream
+    else if (x >= 480) {  // ice cream
         if (438 <= y && y <= 515) {  // mint
-            if (premouseX <= 100 && 590 <= premouseY && premouseY <= 660) {
-                object = "f0";
+            if (premouseX >= 480 && 438 <= premouseY && premouseY <= 515) {
+                // object = "f0";
+                strcpy(object, "f0");
                 *location = 44;
             }
         }
         else if (522 <= y && y <= 593) {  // coffee
-            if (premouseX <= 100 && 590 <= premouseY && premouseY <= 660) {
-                object = "f1";
+            if (premouseX >= 480 && 522 <= premouseY && premouseY <= 593) {
+                // object = "f1";
+                strcpy(object, "f1");
                 *location = 45;
             }
         }
         else if (605 <= y && y <= 670) {  // cone
-            if (premouseX <= 100 && 590 <= premouseY && premouseY <= 660) {
-                object = "c";
+            if (premouseX >= 480 && 605 <= premouseY && premouseY <= 670) {
+                // object = "c";
+                strcpy(object, "c");
                 *location = 46;
             }
         }
@@ -130,37 +134,47 @@ void location (int x, int y, int* location, char* object) {
     else if (y >= 685) {  // work place
         if (118 <= x && x <= 184) {  // assemb
             *location = 2;
-            object = "0";
+            // object = "0";
+            strcpy(object, "0");
         }
         else if (210 <= x && x <= 340) {  // chop
             *location = 1;
-            object = "0";
+            // object = "0";
+            strcpy(object, "0");
         }
         else if (415 <= x && x <= 470) {  // trash
             *location = 3;
-            object = "0";
+            // object = "0";
+            strcpy(object, "0");
         }
     }
     else if (319 <= y && y <= 395) {
         *location = 5;
-        object = "0";
+        // object = "0";
+        strcpy(object, "0");
     }
     else {  // just move
         *location = 6;
-        object = "0";
+        // object = "0";
+        strcpy(object, "0");
     }
+    printf("in proce, obj: %s\n", object);
 }
 
-char* parse_input (int x, int y) {
+char* parse_input (int x, int y,char* input) {
     // char* input = strdup();
     C2S c2s;
     c2s.fromX = premouseX; c2s.fromY = premouseY;
     c2s.toX = nowmouseX; c2s.toY = nowmouseY;
     // location(premouseX, premouseY, &c2s.fromLoc, c2s.obj);
+    memset(c2s.object, 0, sizeof(c2s.object));
     location(nowmouseX, nowmouseY, &c2s.toLoc, c2s.object);
     c2s.action = 0;
-    char input[200];
-    snprintf(input, sizeof(input), "%s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
+    // printf("inst: %s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
+    // printf("hello?\n");
+    // char input[200];
+    snprintf(input, 200, "%s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
+    // printf("input: %s\n", input);
     return input;
 }
 
@@ -177,8 +191,8 @@ void pass_msg (int sockfd) {
         // printf("now mouse x, y = %d, %d", nowmouseX, nowmouseY);
         if (nowmouseX != premouseX || nowmouseY != premouseY) {
             printf("mouse coord: %d, %d\n", nowmouseX, nowmouseY);
-            char userInput[50] = "";
-            // userInput = parse_input(nowmouseX, nowmouseY);
+            char userInput[200];
+            parse_input(nowmouseX, nowmouseY, userInput);
             printf("send to server: %s\n", userInput);
             Writen(sockfd, userInput, strlen(userInput));
         }
