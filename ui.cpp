@@ -55,7 +55,6 @@ void move (int &x, int &y, int &tox, int &toy) {
         y -= 5;
         if (y < toy) y = toy;
     }
-
 }
 
 

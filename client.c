@@ -38,7 +38,8 @@ void connect2serv (char **argv) {
     printf("connect success!\n");
     
     memset(sendline, 0, MAXLINE);
-    if (Fgets(sendline, MAXLINE, stdin) == NULL) return;
+    // if (Fgets(sendline, MAXLINE, stdin) == NULL) return;
+    strcpy(sendline, argv[2]);
     printf("send to serv: %s\n", sendline);
     Writen(sockfd, sendline, strlen(sendline));
 }
@@ -221,7 +222,7 @@ void pass_msg (int sockfd) {
 
 int main (int argc, char **argv) {
     
-    if (argc != 2) err_quit("usage: tcpcli <IPaddress>");
+    if (argc != 3) err_quit("usage: tcpcli <IPaddress>");
 
     connect2serv(argv);
 
