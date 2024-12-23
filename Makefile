@@ -17,5 +17,8 @@ client.o: client.c ui.h
 ui.o: ui.cpp ui.h
 	$(CXX) $(CFLAGS) -c ui.cpp -o ui.o $(LDFLAGS)
 
+serv: serv.o
+	${CC} ${CFLAGS} -o $@ serv.o ${LIBS}
+
 clean:
 	rm -f *.o client
