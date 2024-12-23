@@ -187,7 +187,7 @@ void run_ui() {
                     if (msg.location) {  // not hand
                         if (strcmp(msg.object, "empty") != 0) {
                             printf("hi\n");
-                            if (msg.client == 1) showSp1[obj] = 1;
+                            if (msg.client == 0) showSp1[obj] = 1;
                             else showSp2[obj] = 1;
                         }
                         else {  // clear obj
@@ -195,7 +195,7 @@ void run_ui() {
                             printf("clear object %d at %d, %d", obj, msg.toX, msg.toY);
                             snprintf(str, sizeof(str), "clear obj %d", obj);
                             displayed_message = str;
-                            if (msg.client == 1) {
+                            if (msg.client == 0) {
                                 if (msg.toX <= 195) {  // clear on assemb
                                     for (int i = 0; i < 20; i++)
                                         if (spConf[i].x == 240) showSp1[i] = 0;
@@ -221,7 +221,7 @@ void run_ui() {
                     }
                     else {  // update hand obj
                         if (!obj) {  // clear
-                            if (msg.client == 1) {
+                            if (msg.client == 0) {
                                 cli1take = 0; 
                             }
                             else {
@@ -229,7 +229,7 @@ void run_ui() {
                             }
                         }
                         else {
-                            if (msg.client == 1) {
+                            if (msg.client == 0) {
                                 cli1take = 1;
                                 cli1hand.setTexture(tx[obj]);
                                 cli1hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
@@ -243,7 +243,7 @@ void run_ui() {
                     }
                 }
                 else if (msg.op == 11) { // move character
-                    if (msg.client == 1) {
+                    if (msg.client == 0) {
                         cli1tox = msg.toX;
                         cli1toy = msg.toY;
                     }

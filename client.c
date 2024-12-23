@@ -71,9 +71,34 @@ void parse_server_inst (char* inst) {
         // printf("tmp: %s", ttmp);
         char* token;
         token = strtok(ttmp, " ");
+        int count = 0;
         while (token != NULL) {
-            char* order = strdup(token);
-            printf("order: %s\n", order);
+            char* orderstr = strdup(token);
+            printf("orderstr: %s\n", orderstr);
+            Order order;
+            if (strcmp(orderstr, "b1111") == 0) {
+                order.op = 1;
+
+            }
+            else if (strcmp(orderstr, "b1011") == 0) {
+                order.op = 1;
+            }
+            else if (strcmp(orderstr, "b0111") == 0) {
+                order.op = 1;
+            }
+            else if (strcmp(orderstr, "b0011") == 0) {
+                order.op = 1;
+            }
+            else if (strcmp(orderstr, "i0") == 0) {
+
+            }
+            else if (strcmp(orderstr, "i1") == 0) {
+
+            }
+            else if (strcmp(orderstr, "i2") == 0) {
+
+            }
+            s2c.orders[count] = 
             free(order);
             token = strtok(NULL, " ");
         }
