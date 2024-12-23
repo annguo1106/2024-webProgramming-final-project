@@ -36,6 +36,11 @@ void connect2serv (char **argv) {
 	Inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 	Connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
     printf("connect success!\n");
+    
+    memset(sendline, 0, MAXLINE);
+    if (Fgets(sendline, MAXLINE, stdin) == NULL) return;
+    printf("send to serv: %s\n", sendline);
+    Writen(sockfd, sendline, strlen(sendline));
 }
 
 void parse_server_inst (char* inst) {
