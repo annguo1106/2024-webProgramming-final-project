@@ -1,5 +1,5 @@
 # webProgramming
-    ```shell
-    make serv
-    ./serv
-    ```
+```shell
+make serv
+./serv
+```
