@@ -12,6 +12,8 @@
 char *hand[] = {NULL, NULL, NULL};
 char *chop[] = {NULL, NULL, NULL};
 char *assem[] = {NULL, NULL, NULL};
+bool components[2][4] = {0};
+int assem_cnt[2] = {0};
 
 // message to client buffer
 char buffer[2][MAXLINE];
@@ -23,7 +25,7 @@ char **orders[2];
 
 // timer settings
 timer_t timer_cus[2];
-int sec_cus = 30;
+int sec_cus[2] = {30, 30, 0};
 timer_t timer_chop[2];
 int sec_chop = 5;
 
@@ -63,16 +65,20 @@ void timer_handler(int signum, siginfo_t *info, void *context) {
             else if(strcmp(chop[player_id], "t0") == 0)
                 obj = strdup("t1");
 
-            mes10(player_id, x, y, obj, 0, 0);
-            mes10(player_id, x, y, obj, 0, 1);
+            // remove unchopped lettuce
+            mes10(player_id, x, y, "empty", 1, 0);
+            mes10(player_id, x, y, "emtpy", 1, 1);
+            // put chopped lettuce
+            mes10(player_id, x, y, obj, 1, 0);
+            mes10(player_id, x, y, obj, 1, 1);
             chop[player_id] = strdup(obj);
         }
         else{
-            printf("handler error\n");
+            printf("handler error: task error\n");
         }
     }
     else{
-        printf("handler error\n");
+        printf("handler error: player_id error\n");
     }
 
     printf("Timer expired for player ID: %d, task: %s, order_cnt: %d\n", player_id, task, order_cnt[player_id]);
@@ -143,7 +149,7 @@ void update_timer(timer_t timerid, int new_seconds, int new_interval) {
 }
 
 char **get_new_order(int count){
-    const char *available[] = { "i0", "i1", "i2"}; // "b1111", "b1011", "b0111", "b0011",
+    const char *available[] = {"i0", "i1", "i2", "b1111", "b1011", "b0111", "b0011"};
     int num_avai = sizeof(available) / sizeof(available[0]);
 
     // Allocate memory for the array of string pointers
@@ -162,6 +168,7 @@ char **get_new_order(int count){
         
         // Allocate memory for the order string and copy the selected string into it
         orders[i] = strdup(available[random_index]);
+        // printf("order: %s\n", orders[i]);
         if (orders[i] == NULL) {
             perror("Failed to duplicate string");
             exit(EXIT_FAILURE);
@@ -231,11 +238,14 @@ void mes12(int player_id, int complete, int sendto){
 }
 
 void mes13(char **order, int player_id, int sendto){
-    char sendline[MAXLINE];
+    char sendline[MAXLINE], str_sec[10];
+    snprintf(str_sec, sizeof(str_sec), "%d", sec_cus[player_id]);
     snprintf(sendline, sizeof(sendline), "13 %d", player_id);
-    for(int i=0; i<10; i++){
+    for(int i=0; i<5; i++){
         strcat(sendline, " ");
         strcat(sendline, order[i]);
+        strcat(sendline, " ");
+        strcat(sendline, str_sec);
     }
     strcat(sendline, "\n");
 
@@ -286,6 +296,103 @@ void mes99(int sendto){
     }
 }
 
+void assem_counter(char* obj, int player_id, int from_x, int from_y, int to_x, int to_y){
+    // check if obj can be put on the assemble counter
+
+    if(strcmp(assem[player_id], "") != 0){
+        // there is something complete on the assemble counter
+        printf("Assem error: assem full\n");
+        mes14(player_id, player_id);
+        return;
+    }
+
+    int obj_num = -1;
+    if(strcmp(obj, "l1") == 0 && !components[player_id][0]){
+        // no lettuce yet
+        obj_num = 0;
+    }
+    else if(strcmp(obj, "t1") == 0 && !components[player_id][1]){
+        // no tomato yet
+        obj_num = 1;
+    }
+    else if(strcmp(obj, "m") == 0 && !components[player_id][2]){
+        // no meat yet
+        obj_num = 2;
+    }
+    else if(strcmp(obj, "b") == 0 && !components[player_id][3]){
+        // no bread yet
+        obj_num = 3;
+    }
+
+    if(obj_num != -1){
+        // empty hands
+        mes10(player_id, from_x, from_y, "empty", 0, 0);
+        mes10(player_id, from_x, from_y, "empty", 0, 1);
+        hand[player_id] = strdup("");
+        // put on counter
+        mes10(player_id, to_x, to_y, obj, 1, 0);
+        mes10(player_id, to_x, to_y, obj, 1, 1);
+        components[player_id][obj_num] = 1;
+        printf("add component %d to counter\n", obj_num);
+    }
+    else{
+        printf("Assem error: already present on counter\n");
+        mes14(player_id, player_id);
+    }
+}
+
+void assem_logic(int player_id, int x, int y){
+    // check if the current components can be assembled
+    // 0: lettuce, 1:tomato, 2: meat, 3: bread
+    if(components[player_id][2] && components[player_id][3]){
+        mes10(player_id, x, y, "empty", 1, 0);   // clean assemble counter
+        mes10(player_id, x, y, "empty", 1, 1);
+
+        if(components[player_id][0] && components[player_id][1]){
+            // all
+            mes10(player_id, x, y, "b1111", 1, 0);
+            mes10(player_id, x, y, "b1111", 1, 1);
+            assem[player_id] = strdup("b1111");
+        }
+        else if(components[player_id][0]){
+            // lettuce + meat + bread
+            mes10(player_id, x, y, "b1011", 1, 0);
+            mes10(player_id, x, y, "b1011", 1, 1);
+            assem[player_id] = strdup("b1011");
+        }
+        else if(components[player_id][1]){
+            // tomato + meat + bread
+            mes10(player_id, x, y, "b0111", 1, 0);
+            mes10(player_id, x, y, "b0111", 1, 1);
+            assem[player_id] = strdup("b0111");
+        }
+        else{
+            // only meat + bread
+            mes10(player_id, x, y, "b0011", 1, 0);
+            mes10(player_id, x, y, "b0011", 1, 1);
+            assem[player_id] = strdup("b0011");
+        }
+        
+        // clear components
+        for(int i=0; i<4; i++){
+            components[player_id][i] = 0;
+        }
+        printf("hand[%d]: %s, assem: %s\n", player_id, hand[player_id], assem[player_id]);
+    }
+    else{
+        // unable to assemble
+        printf("Assem error: not enough components\n");
+        mes14(player_id, player_id);
+    }
+}
+
+void discard(int player_id, int x, int y){
+    mes10(player_id, x, y, "empty", 0, 0);
+    mes10(player_id, x, y, "empty", 0, 1);
+    hand[player_id] = strdup("");
+    printf("hand[%d]: %s\n", player_id, hand[player_id]);
+}
+
 void handle_message(char* recvline, int player_id){
     char obj[20];
     int from_x, from_y, to_x, to_y;
@@ -294,14 +401,15 @@ void handle_message(char* recvline, int player_id){
     printf("recvline content: %s\n", recvline);
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
-        if(strcmp(obj, "l0") == 0){
+        if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
+            // not chopped lettuce or tomato
             if(to_loc == 0){
                 // to hand
                 if(strcmp(hand[player_id], "") == 0){
                     // empty hand
-                    mes10(player_id, to_x, to_y, "l0", 0, 0);
-                    mes10(player_id, to_x, to_y, "l0", 0, 1);
-                    hand[player_id] = strdup("l0");
+                    mes10(player_id, to_x, to_y, obj, 0, 0);
+                    mes10(player_id, to_x, to_y, obj, 0, 1);
+                    hand[player_id] = strdup(obj);
                     printf("hand[%d]: %s\n", player_id, hand[player_id]);
                 }
                 else{
@@ -309,31 +417,17 @@ void handle_message(char* recvline, int player_id){
                     mes14(player_id, player_id);
                 }
             }
-            else if(to_loc == 3){
-                // hand to trash
-                if(strcmp(hand[player_id], "l0") == 0){
-                    // delete lettuce in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
-                }
-                else{
-                    printf("not fit: hand: %s\n", hand[player_id]);
-                    mes14(player_id, player_id);
-                }
-            }
             else if(to_loc == 1){
                 // to chopping board
-                if(strcmp(hand[player_id], "l0") == 0 && strcmp(chop[player_id], "") == 0){
+                if(strcmp(hand[player_id], obj) == 0 && strcmp(chop[player_id], "") == 0){
                     // delete lettuce in hand
                     mes10(player_id, from_x, from_y, "empty", 0, 0);
                     mes10(player_id, from_x, from_y, "empty", 0, 1);
                     hand[player_id] = strdup("");
                     // put lettuce on chopping board
-                    mes10(player_id, to_x, to_y, "l0", 0, 0);
-                    mes10(player_id, to_x, to_y, "l0", 0, 1);
-                    chop[player_id] = strdup("l0");
+                    mes10(player_id, to_x, to_y, obj, 1, 0);
+                    mes10(player_id, to_x, to_y, obj, 1, 1);
+                    chop[player_id] = strdup(obj);
                     printf("hand[%d]: %s, chop: %s\n", player_id, hand[player_id], chop[player_id]);
                     // set timer
                     timer_chop[player_id] = create_timer(sec_chop, 0, player_id, "chop", to_x, to_y);
@@ -343,24 +437,57 @@ void handle_message(char* recvline, int player_id){
                     mes14(player_id, player_id);
                 }
             }
+            else if(to_loc == 3){
+                // hand to trash
+                if(strcmp(hand[player_id], obj) == 0){
+                    // delete obj in hand
+                    discard(player_id, from_x, from_y);
+                }
+                else{
+                    printf("not fit: hand: %s\n", hand[player_id]);
+                    mes14(player_id, player_id);
+                }
+            }
             else{
                 mes14(player_id, player_id);
             }
         }
-        else if(strcmp(obj, "l1") == 0){
-            if(to_loc == 0){
-                // chopping board to hands
-                // if(chop[player_id])
+        else if(strcmp(obj, "l1") == 0 || strcmp(obj, "t1") == 0){
+            // chopped lettuce or tomato
+            if(to_loc == 2){
+                // hands to assemble counter
+                if(strcmp(hand[player_id], obj) == 0){
+                    assem_counter(obj, player_id, from_x, from_y, to_x, to_y);
+                }
+                else{
+                    printf("not fit: hand: %s\n", hand[player_id]);
+                    mes14(player_id, player_id);
+                }
+            }
+            else if(to_loc == 3){
+                // hand to trash
+                if(strcmp(hand[player_id], obj) == 0){
+                    // delete obj in hand
+                    discard(player_id, from_x, from_y);
+                }
+                else{
+                    printf("not fit: hand: %s\n", hand[player_id]);
+                    mes14(player_id, player_id);
+                }
+            }
+            else{
+                mes14(player_id, player_id);
             }
         }
-        else if(strcmp(obj, "t0") == 0){
+        else if(strcmp(obj, "m") == 0 || strcmp(obj, "b") == 0){
+            // meat or bread
             if(to_loc == 0){
                 // to hand
                 if(strcmp(hand[player_id], "") == 0){
                     // empty hand
-                    mes10(player_id, to_x, to_y, "t0", 0, 0);
-                    mes10(player_id, to_x, to_y, "t0", 0, 1);
-                    hand[player_id] = strdup("t0");
+                    mes10(player_id, to_x, to_y, obj, 0, 0);
+                    mes10(player_id, to_x, to_y, obj, 0, 1);
+                    hand[player_id] = strdup(obj);
                     printf("hand[%d]: %s\n", player_id, hand[player_id]);
                 }
                 else{
@@ -368,37 +495,24 @@ void handle_message(char* recvline, int player_id){
                     mes14(player_id, player_id);
                 }
             }
-            else if(to_loc == 3){
-                // hand to trash
-                if(strcmp(hand[player_id], "t0") == 0){
-                    // delete lettuce in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
+            else if(to_loc == 2){
+                // hands to assemble counter
+                if(strcmp(hand[player_id], obj) == 0){
+                    assem_counter(obj, player_id, from_x, from_y, to_x, to_y);
                 }
                 else{
                     printf("not fit: hand: %s\n", hand[player_id]);
                     mes14(player_id, player_id);
                 }
             }
-            else if(to_loc == 1){
-                // to chopping board
-                if(strcmp(hand[player_id], "t0") == 0 && strcmp(chop[player_id], "") == 0){
-                    // delete tomato in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    // put tomato on chopping board
-                    mes10(player_id, to_x, to_y, "t0", 0, 0);
-                    mes10(player_id, to_x, to_y, "t0", 0, 1);
-                    chop[player_id] = strdup("t0");
-                    printf("hand[%d]: %s, chop: %s\n", player_id, hand[player_id], chop[player_id]);
-                    // set timer
-                    timer_chop[player_id] = create_timer(sec_chop, 0, player_id, "chop", to_x, to_y);
+            else if(to_loc == 3){
+                // hand to trash
+                if(strcmp(hand[player_id], obj) == 0){
+                    // delete obj in hand
+                    discard(player_id, from_x, from_y);
                 }
                 else{
-                    printf("not fit: hand: %s, chop: %s\n", hand[player_id], chop[player_id]);
+                    printf("not fit: hand: %s\n", hand[player_id]);
                     mes14(player_id, player_id);
                 }
             }
@@ -406,12 +520,6 @@ void handle_message(char* recvline, int player_id){
                 mes14(player_id, player_id);
             }
         }
-        // else if(strcmp(obj, "t1") == 0){
-        // }
-        // else if(strcmp(obj, "m") == 0){
-        // }
-        // else if(strcmp(obj, "b") == 0){
-        // }
         else if(strcmp(obj, "f0") == 0){
             if(to_loc == 0){
                 // from origin to hand
@@ -468,7 +576,7 @@ void handle_message(char* recvline, int player_id){
             if(to_loc == 0){
                 // origin to hand
                 if(strcmp(hand[player_id], "") == 0){
-                    // empty hand
+                    // nothing in hand
                     mes10(player_id, to_x, to_y, "c", 0, 0);
                     mes10(player_id, to_x, to_y, "c", 0, 1);
 
@@ -484,10 +592,7 @@ void handle_message(char* recvline, int player_id){
                 // hand to trash
                 if(strcmp(hand[player_id], "c") == 0){
                     // delete cone in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
+                    discard(player_id, from_x, from_y);
                 }
                 else{
                     printf("not fit: hand: %s\n", hand[player_id]);
@@ -498,23 +603,12 @@ void handle_message(char* recvline, int player_id){
                 mes14(player_id, player_id);
             }
         }
-        // else if(strcmp(obj, "b1111") == 0){
-        // }
-        // else if(strcmp(obj, "b1011") == 0){
-        // }
-        // else if(strcmp(obj, "b0111") == 0){
-        // }
-        // else if(strcmp(obj, "b0011") == 0){
-        // }
-        else if(strcmp(obj, "i0") == 0){
+        else if(strcmp(obj, "b1111") == 0 || strcmp(obj, "b1011") == 0 || strcmp(obj, "b0111") == 0 || strcmp(obj, "b0011") == 0){
             if(to_loc == 3){
                 // hand to trash
-                if(strcmp(hand[player_id], "i0") == 0){
-                    // delete ice cream 1 in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
+                if(strcmp(hand[player_id], obj) == 0){
+                    // delete obj in hand
+                    discard(player_id, from_x, from_y);
                 }
                 else{
                     printf("not fit: hand: %s\n", hand[player_id]);
@@ -522,11 +616,11 @@ void handle_message(char* recvline, int player_id){
                 }
             }
             else if(to_loc == 5){
-                // to customer
+                // hand to customer
                 int cur = 10 - order_cnt[player_id];
-                if(strcmp(hand[player_id], "i0") == 0 && strcmp(orders[player_id][cur], "i0") == 0){
+                if(strcmp(hand[player_id], obj) == 0 && strcmp(orders[player_id][cur], obj) == 0){
                     // reset timer
-                    update_timer(timer_cus[player_id], sec_cus + 1, sec_cus);
+                    update_timer(timer_cus[player_id], sec_cus[player_id] + 2, sec_cus[player_id]);
                     // delete ice cream 1 in hand
                     mes10(player_id, from_x, from_y, "empty", 0, 0);
                     mes10(player_id, from_x, from_y, "empty", 0, 1);
@@ -546,15 +640,12 @@ void handle_message(char* recvline, int player_id){
                 mes14(player_id, player_id);
             }
         }
-        else if(strcmp(obj, "i1") == 0){
+        else if(strcmp(obj, "i0") == 0 || strcmp(obj, "i1") == 0 || strcmp(obj, "i2") == 0){
             if(to_loc == 3){
                 // hand to trash
-                if(strcmp(hand[player_id], "i1") == 0){
-                    // delete ice cream 1 in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
+                if(strcmp(hand[player_id], obj) == 0){
+                    // delete obj in hand
+                    discard(player_id, from_x, from_y);
                 }
                 else{
                     printf("not fit: hand: %s\n", hand[player_id]);
@@ -562,51 +653,11 @@ void handle_message(char* recvline, int player_id){
                 }
             }
             else if(to_loc == 5){
-                // to customer
+                // hand to customer
                 int cur = 10 - order_cnt[player_id];
-                if(strcmp(hand[player_id], "i1") == 0 && strcmp(orders[player_id][cur], "i1") == 0){
+                if(strcmp(hand[player_id], obj) == 0 && strcmp(orders[player_id][cur], obj) == 0){
                     // reset timer
-                    update_timer(timer_cus[player_id], sec_cus + 1, sec_cus);
-                    // delete ice cream 1 in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
-                    // complete order
-                    order_cnt[player_id]--;
-                    mes12(player_id, 1, 0);
-                    mes12(player_id, 1, 1);
-                }
-                else{
-                    printf("not fit: hand: %s, order: %s\n", hand[player_id], orders[player_id][cur]);
-                    mes14(player_id, player_id);
-                }
-            }
-            else{
-                mes14(player_id, player_id);
-            }
-        }
-        else if(strcmp(obj, "i2") == 0){
-            if(to_loc == 3){
-                // hand to trash
-                if(strcmp(hand[player_id], "i2") == 0){
-                    // delete ice cream 1 in hand
-                    mes10(player_id, from_x, from_y, "empty", 0, 0);
-                    mes10(player_id, from_x, from_y, "empty", 0, 1);
-                    hand[player_id] = strdup("");
-                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
-                }
-                else{
-                    printf("not fit: hand: %s\n", hand[player_id]);
-                    mes14(player_id, player_id);
-                }
-            }
-            else if(to_loc == 5){
-                // to customer
-                int cur = 10 - order_cnt[player_id];
-                if(strcmp(hand[player_id], "i2") == 0 && strcmp(orders[player_id][cur], "i2") == 0){
-                    // reset timer
-                    update_timer(timer_cus[player_id], sec_cus + 1, sec_cus);
+                    update_timer(timer_cus[player_id], sec_cus[player_id] + 2, sec_cus[player_id]);
                     // delete ice cream 1 in hand
                     mes10(player_id, from_x, from_y, "empty", 0, 0);
                     mes10(player_id, from_x, from_y, "empty", 0, 1);
@@ -627,10 +678,53 @@ void handle_message(char* recvline, int player_id){
             }
         }
         else if(strcmp(obj, "0") == 0){
+            // player
             if(to_loc == 6){
-                // floor
+                // floor, player move
                 mes11(player_id, from_x, from_y, to_x, to_y, 0);
                 mes11(player_id, from_x, from_y, to_x, to_y, 1);
+            }
+            else if(to_loc == 2 && action == 1){
+                // assemble action
+                assem_logic(player_id, to_x, to_y);
+            }
+            else if(to_loc == 2 && action == 0){
+                // pick up obj on assemble counter
+                if(strcmp(assem[player_id], "") && strcmp(hand[player_id], "") == 0){
+                    // delete obj on chopping board
+                    mes10(player_id, to_x, to_y, "empty", 1, 0);
+                    mes10(player_id, to_x, to_y, "empty", 1, 1);
+                    // obj in hands
+                    mes10(player_id, 0, 0, assem[player_id], 0, 0);
+                    mes10(player_id, 0, 0, assem[player_id], 0, 1);
+
+                    hand[player_id] = strdup(assem[player_id]);
+                    assem[player_id] = strdup("");
+                    printf("hand[%d]: %s, assem: %s\n", player_id, hand[player_id], assem[player_id]);
+                }
+                else{
+                    printf("not fit: hand: %s, assem: %s\n", hand[player_id], assem[player_id]);
+                    mes14(player_id, player_id);
+                }
+            }
+            else if(to_loc == 1 && action == 0){
+                // pick up obj on chopping board
+                if(strcmp(chop[player_id], "") && strcmp(hand[player_id], "") == 0){
+                    // delete obj on chopping board
+                    mes10(player_id, to_x, to_y, "empty", 1, 0);
+                    mes10(player_id, to_x, to_y, "empty", 1, 1);
+                    // obj in hands
+                    mes10(player_id, 0, 0, chop[player_id], 0, 0);
+                    mes10(player_id, 0, 0, chop[player_id], 0, 1);
+
+                    hand[player_id] = strdup(chop[player_id]);
+                    chop[player_id] = strdup("");
+                    printf("hand[%d]: %s, chop: %s\n", player_id, hand[player_id], chop[player_id]);
+                }
+                else{
+                    printf("not fit: hand: %s, chop: %s\n", hand[player_id], chop[player_id]);
+                    mes14(player_id, player_id);
+                }
             }
             else{
                 printf("invalid player move\n");
@@ -746,32 +840,30 @@ main(int argc, char **argv)
             assem[1] = strdup("");
 
             // send order
-            orders[0] = get_new_order(10);
-            orders[1] = get_new_order(10);
-            printf("mes13 buf0: %d\n", buffer[0]);
-            printf("mes13 buf1: %d\n", buffer[1]);
+            orders[0] = get_new_order(5);
+            orders[1] = get_new_order(5);
             mes13(orders[0], 0, 0);
             mes13(orders[1], 1, 1);
             mes13(orders[0], 0, 1);
             mes13(orders[1], 1, 0);
-            order_cnt[0] = 10;
-            order_cnt[1] = 10;
+            order_cnt[0] = 5;
+            order_cnt[1] = 5;
 
             //set customer timer
-            timer_cus[0] = create_timer(sec_cus, sec_cus, 0, "cus", 0, 0);
-            timer_cus[1] = create_timer(sec_cus, sec_cus, 1, "cus", 0, 0);
+            timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
+            timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
             
             for( ; ; ){
 
                 for(int k=0; k<2; k++){
                     if(order_cnt[k] == 0){
                         free(orders[k]);
-                        orders[k] = get_new_order(10);
+                        orders[k] = get_new_order(5);
                         mes13(orders[k], k, 0);
                         mes13(orders[k], k, 1);
-                        sec_cus -= 5;
-                        update_timer(timer_cus[k], sec_cus + 2, sec_cus);
-                        order_cnt[k] = 10;
+                        sec_cus[k] -= 3;
+                        update_timer(timer_cus[k], sec_cus[k] + 2, sec_cus[k]);
+                        order_cnt[k] = 5;
                     }
                 }
 
