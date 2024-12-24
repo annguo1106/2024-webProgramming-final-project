@@ -48,6 +48,7 @@ typedef struct S2C {
     int complete;  // order complete or customer leaved
     // Order orders[15];  // new orders
     char orders[20][50];
+    int time[20];
 } S2C;
 
 typedef struct Sprite {

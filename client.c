@@ -3,6 +3,8 @@
 # include "ui.h"
 # include <pthread.h>
 # include <string.h>
+# include <stdio.h>
+# include <stdlib.h>
 
 int sockfd;
 struct sockaddr_in servaddr;
@@ -14,6 +16,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int mouseX = -1.0, mouseY = -1.0;
 int nowmouseX = -1.0, nowmouseY = -1.0;
 int premouseX = -1.0, premouseY = -1.0;
+int preloc = 6;
 
 void* ui_thread_func(void* arg) {
     run_ui ();
@@ -75,7 +78,8 @@ void parse_server_inst (char* inst) {
         while (token != NULL) {
             printf("count = %d\n", count);
             // char* orderstr = strdup(token);
-            strcpy(servInst.orders[count], token);
+            if (!count % 2) strcpy(servInst.orders[count/2], token);
+            else servInst.time[count/2] = atoi(token);
             printf("token: %d %s\n", count, servInst.orders[count]);
             // free(token);
             printf("1\n");
@@ -183,6 +187,10 @@ char* parse_input (int x, int y,char* input) {
     memset(c2s.object, 0, sizeof(c2s.object));
     location(nowmouseX, nowmouseY, &c2s.toLoc, c2s.object);
     c2s.action = 0;
+    if (preloc == 2 && c2s.toLoc == 2) {  // assemb
+        c2s.action = 1;
+    }
+    preloc = c2s.toLoc;
     // printf("inst: %s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
     // printf("hello?\n");
     // char input[200];
