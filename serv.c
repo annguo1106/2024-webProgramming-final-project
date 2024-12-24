@@ -398,12 +398,12 @@ void handle_message(char* recvline, int player_id){
     int from_x, from_y, to_x, to_y;
     int to_loc, action;
     printf("\n---- messsage -----\n");
-    printf("recvline content: %s\n", recvline);
+    printf("[%d] recvline content: %s\n", player_id, recvline);
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
         if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
             // not chopped lettuce or tomato
-            if(to_loc == 0){
+            if(to_loc == 40 || to_loc == 41){
                 // to hand
                 if(strcmp(hand[player_id], "") == 0){
                     // empty hand
@@ -481,7 +481,7 @@ void handle_message(char* recvline, int player_id){
         }
         else if(strcmp(obj, "m") == 0 || strcmp(obj, "b") == 0){
             // meat or bread
-            if(to_loc == 0){
+            if(to_loc == 42 || to_loc == 43){
                 // to hand
                 if(strcmp(hand[player_id], "") == 0){
                     // empty hand
@@ -521,7 +521,7 @@ void handle_message(char* recvline, int player_id){
             }
         }
         else if(strcmp(obj, "f0") == 0){
-            if(to_loc == 0){
+            if(to_loc == 44){
                 // from origin to hand
                 if(strcmp(hand[player_id], "c") == 0){
                     // cone in hand = 1st flavor + cone
@@ -539,6 +539,7 @@ void handle_message(char* recvline, int player_id){
                 }
                 else{
                     printf("take cone first\n");
+                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
                     mes14(player_id, player_id);
                 }
             }
@@ -547,7 +548,7 @@ void handle_message(char* recvline, int player_id){
             }
         }
         else if(strcmp(obj, "f1") == 0){
-            if(to_loc == 0){
+            if(to_loc == 45){
                 // from origin to hand
                 if(strcmp(hand[player_id], "c") == 0){
                     // cone in hand = 2nd flavor + cone
@@ -565,6 +566,7 @@ void handle_message(char* recvline, int player_id){
                 }
                 else{
                     printf("take cone first\n");
+                    printf("hand[%d]: %s\n", player_id, hand[player_id]);
                     mes14(player_id, player_id);
                 }
             }
@@ -573,7 +575,7 @@ void handle_message(char* recvline, int player_id){
             }
         }
         else if(strcmp(obj, "c") == 0){
-            if(to_loc == 0){
+            if(to_loc == 46){
                 // origin to hand
                 if(strcmp(hand[player_id], "") == 0){
                     // nothing in hand
