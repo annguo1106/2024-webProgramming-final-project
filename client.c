@@ -150,25 +150,33 @@ void location (int x, int y, int* location, char* object) {
     }
     else if (y >= 685) {  // work place
         if (118 <= x && x <= 184) {  // assemb
-            *location = 2;
-            // object = "0";
-            strcpy(object, "0");
+            if (premouseY >= 685 && 118 <= premouseX && premouseX <= 184) {
+                *location = 2;
+                // object = "0";
+                strcpy(object, "0");
+            }            
         }
         else if (210 <= x && x <= 340) {  // chop
-            *location = 1;
-            // object = "0";
-            strcpy(object, "0");
+            if (premouseY >= 685 && 210 <= premouseX && premouseX <= 340) {
+                *location = 1;
+                // object = "0";
+                strcpy(object, "0");
+            }
         }
         else if (415 <= x && x <= 470) {  // trash
-            *location = 3;
-            // object = "0";
-            strcpy(object, "0");
+            if (premouseY >= 685 && 415 <= premouseX && premouseX <= 470) {
+                *location = 3;
+                // object = "0";
+                strcpy(object, "0");
+            }
         }
     }
     else if (319 <= y && y <= 395) {
-        *location = 5;
-        // object = "0";
-        strcpy(object, "0");
+        if (319 <= premouseY && premouseY <= 395) {
+            *location = 5;
+            // object = "0";
+            strcpy(object, "0");
+        }
     }
     else {  // just move
         *location = 6;
@@ -189,6 +197,7 @@ char* parse_input (int x, int y,char* input) {
     c2s.action = 0;
     if (preloc == 2 && c2s.toLoc == 2) {  // assemb
         c2s.action = 1;
+        preloc = 6;
     }
     preloc = c2s.toLoc;
     // printf("inst: %s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);

@@ -18,11 +18,13 @@ void add_msg(S2C servInst) {
     // msg_queue.push(std::string(message));
 }
 
-int def_obj (string obj) {
-    if (obj == "l0") return 16;
-    if (obj == "l1") return 16;
+int def_obj (string obj, int x) {
+    if (obj == "l0") return 20;  // on chop board
+    if (obj == "l1" && 210 <= x && x <= 340) return 20;  // on chop board
+    if (obj == "l1" && 118 <= x && x <= 184) return 16;  // on assemb board
     if (obj == "t0") return 19;
-    if (obj == "t1") return 18;
+    if (obj == "t1" && 210 <= x && x <= 340) return 18;  // on chop board
+    if (obj == "t1" && 118 <= x && x <= 184) return 21;  // on assemb board
     if (obj == "m") return 17;
     if (obj == "b") return 4;
     if (obj == "c") return 12;
@@ -170,8 +172,8 @@ void run_ui() {
         sp2[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
     }
     
-    bool ismoving = false;
-
+    bool cli1moving = false;
+    // bool cli2moving = false;
     // client sp
     sf::Sprite cli1, cli2, cli1hand, cli2hand;
     sf::Texture cli1tex, cli2tex;
@@ -233,7 +235,7 @@ void run_ui() {
                     // displayed_message = "mouse pressed\n";
                     snprintf(str, sizeof(str), "click at %d %d\n", x, y);
                     displayed_message = str;
-                    user_input(x, y);
+                    if (!cli1moving) user_input(x, y);
                 }
             }
         }
@@ -253,34 +255,35 @@ void run_ui() {
                     printf("msg location %d\n", msg.location);
                     if (msg.location) {  // not hand
                         if (strcmp(msg.object, "empty") != 0) {
-                            printf("hi\n");
                             if (msg.client == 0) showSp1[obj] = 1;
                             else showSp2[obj] = 1;
                         }
                         else {  // clear obj
-                            printf("in clear sooooope\n");
-                            printf("clear object %d at %d, %d", obj, msg.toX, msg.toY);
+                            // printf("in clear sooooope\n");
+                            // printf("clear object %d at %d, %d", obj, msg.toX, msg.toY);
                             snprintf(str, sizeof(str), "clear obj %d", obj);
                             displayed_message = str;
                             if (msg.client == 0) {
                                 if (msg.toX <= 195) {  // clear on assemb
+                                    printf("clear assemb\n");
                                     for (int i = 0; i < 20; i++)
-                                        if (spConf[i].x == 240) showSp1[i] = 0;
+                                        if (spConf[i].x == 123) showSp1[i] = 0;
                                 }
                                 else {  // clear on chop
+                                    printf("clear chop");
                                     for (int i = 0; i < 20; i++) {
-                                        if (spConf[i].x == 123) showSp1[i] = 0;
+                                        if (spConf[i].x == 240) showSp1[i] = 0;
                                     }
                                 }
                             }
                             else {
                                 if (msg.toX <= 195) {  // clear on assemb
                                     for (int i = 0; i < 20; i++)
-                                        if (spConf[i].x == 240) showSp2[i] = 0;
+                                        if (spConf[i].x == 123) showSp2[i] = 0;
                                 }
                                 else {  // clear on chop
                                     for (int i = 0; i < 20; i++) {
-                                        if (spConf[i].x == 123) showSp2[i] = 0;
+                                        if (spConf[i].x == 240) showSp2[i] = 0;
                                     }
                                 }
                             }
@@ -311,20 +314,21 @@ void run_ui() {
                 }
                 else if (msg.op == 11) { // move character
                     if (msg.client == 0) {
-                        cli1tox = msg.toX;
-                        cli1toy = msg.toY;
-                        if (cli1tox > 390) cli1tox = 390;
-                        if (cli1tox < 100) cli1tox = 100;
-                        if (cli1toy > 568) cli1toy = 568;
-                        if (cli1toy < 411) cli1toy = 411;
+                        cli1tox = msg.toX - 58;
+                        cli1toy = msg.toY - 75;
+                        if (cli1tox > 380) cli1tox = 380;
+                        if (cli1tox < 90) cli1tox = 90;
+                        if (cli1toy > 530) cli1toy = 530;
+                        if (cli1toy < 355) cli1toy = 355;
+                        cli1moving = 1;
                     }
                     else {
-                        cli2tox = msg.toX;
-                        cli2toy = msg.toY;
+                        cli2tox = msg.toX - 58;
+                        cli2toy = msg.toY - 75;
                         if (cli2tox > 990) cli2tox = 990; 
-                        if (cli2tox < 700) cli2tox = 700;
-                        if (cli2toy > 568) cli2toy = 568;
-                        if (cli2toy < 411) cli2toy = 411;
+                        if (cli2tox < 650) cli2tox = 650;
+                        if (cli2toy > 1118) cli2toy = 1118;
+                        if (cli2toy < 955) cli2toy = 955;
                     }
                 }
                 else if (msg.op == 12) {  // update customer
@@ -374,6 +378,9 @@ void run_ui() {
         cli2hand.setPosition(int(cli2x), int(cli2y));
         move(0, cli1x, cli1y, cli1tox, cli1toy, dt);
         move(1, cli2x, cli2y, cli2tox, cli2toy, dt);
+        if (cli1x == cli1tox && cli1y == cli1toy) cli1moving = 0;
+        // if (cli2x == cli2tox && cli2y == cli2toy) cli2moving = 0;
+        
         // if (cli1x < 100 || cli1x > 390) cli1x -= 5;
 
         window.clear(sf::Color::Black);
