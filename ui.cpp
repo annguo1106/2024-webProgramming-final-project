@@ -38,33 +38,28 @@ int def_obj (string obj) {
 }
 
 
-void move (int client, int &x, int &y, int &tox, int &toy, float dt) {
+void move (int client, float &x, float &y, int &tox, int &toy, float dt) {
     if (x < tox) {
-        x += 5 * dt;
+        // printf("move cli %f %f to %d %d\n", x, y, tox, toy);
+        x += 50 * dt;
+        // printf("x added %d\n", x);
         if (x > tox) x = tox;
     }
     else if (x > tox) {
-        x -= 5 * dt;
+        // printf("move cli %d %d\n", x, y);
+        x -= 50 * dt;
         if (x < tox) x = tox;
     }
     if (x == tox && y < toy) {
-        y += 5 * dt;
+        // printf("move cli %d %d\n", x, y);
+        y += 50 * dt;
         if (y > toy) y = toy;
     }
     else if (x == tox && y > toy) {
-        y -= 5 * dt;
+        // printf("move cli %d %d\n", x, y);
+        y -= 50 * dt;
         if (y < toy) y = toy;
     }
-    // if (client == 0) {
-    //     if (x > 390) x = 390;
-    //     if (x < 100) x = 100;
-    // }
-    // else if (client == 1) {
-    //     if (x > 990) x = 990; 
-    //     if (x < 700) x = 700;
-    // }
-    // if (y > 568) y = 568;
-    // if (y < 411) y = 411;
 }
 
 int parse_order (string order) {
@@ -190,13 +185,13 @@ void run_ui() {
     }
     cli1.setTexture(cli1tex);
     cli2.setTexture(cli2tex);
-    int cli1x = 228, cli1y = 470;
-    int cli2x = 870, cli2y = 470;
+    float cli1x = 228, cli1y = 470;
+    float cli2x = 870, cli2y = 470;
     int cli1tox = 228, cli1toy = 470;
     int cli2tox = 870, cli2toy = 470;
     bool cli1take = 0, cli2take = 0;
-    cli1.setPosition(cli1x, cli1y);
-    cli2.setPosition(cli2x, cli2y);
+    cli1.setPosition(int(cli1x), int(cli1y));
+    cli2.setPosition(int(cli2x), int(cli2y));
 
     // customer sp
     vector<sf::Sprite> customer1(11);
@@ -220,6 +215,7 @@ void run_ui() {
         // update clock
         sf::Time deltaTime = clock.restart();
         float dt = deltaTime.asSeconds();
+        // printf("dt: %f\n", dt);
 
         // update events
         sf::Event event;
@@ -317,10 +313,18 @@ void run_ui() {
                     if (msg.client == 0) {
                         cli1tox = msg.toX;
                         cli1toy = msg.toY;
+                        if (cli1tox > 390) cli1tox = 390;
+                        if (cli1tox < 100) cli1tox = 100;
+                        if (cli1toy > 568) cli1toy = 568;
+                        if (cli1toy < 411) cli1toy = 411;
                     }
                     else {
                         cli2tox = msg.toX;
                         cli2toy = msg.toY;
+                        if (cli2tox > 990) cli2tox = 990; 
+                        if (cli2tox < 700) cli2tox = 700;
+                        if (cli2toy > 568) cli2toy = 568;
+                        if (cli2toy < 411) cli2toy = 411;
                     }
                 }
                 else if (msg.op == 12) {  // update customer
@@ -364,10 +368,10 @@ void run_ui() {
         }
 
 
-        cli1.setPosition(cli1x, cli1y);
-        cli2.setPosition(cli2x, cli2y);
-        cli1hand.setPosition(cli1x, cli1y);
-        cli2hand.setPosition(cli2x, cli2y);
+        cli1.setPosition(int(cli1x), int(cli1y));
+        cli2.setPosition(int(cli2x), int(cli2y));
+        cli1hand.setPosition(int(cli1x), int(cli1y));
+        cli2hand.setPosition(int(cli2x), int(cli2y));
         move(0, cli1x, cli1y, cli1tox, cli1toy, dt);
         move(1, cli2x, cli2y, cli2tox, cli2toy, dt);
         // if (cli1x < 100 || cli1x > 390) cli1x -= 5;
