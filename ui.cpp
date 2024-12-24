@@ -192,6 +192,7 @@ void run_ui() {
     int cli1tox = 228, cli1toy = 470;
     int cli2tox = 870, cli2toy = 470;
     bool cli1take = 0, cli2take = 0;
+    char handobj[50];
     cli1.setPosition(int(cli1x), int(cli1y));
     cli2.setPosition(int(cli2x), int(cli2y));
 
@@ -235,7 +236,8 @@ void run_ui() {
                     // displayed_message = "mouse pressed\n";
                     snprintf(str, sizeof(str), "click at %d %d\n", x, y);
                     displayed_message = str;
-                    if (!cli1moving) user_input(x, y);
+                    if (!cli1take) strcpy(handobj, "0");
+                    if (!cli1moving) user_input(x, y, handobj);
                 }
             }
         }
@@ -250,7 +252,7 @@ void run_ui() {
                 displayed_message = str;
                 int obj;
                 if (msg.op == 10) {  // update object status
-                    obj = def_obj(msg.object); 
+                    obj = def_obj(msg.object, msg.toX); 
                     printf("obj is %d %s\n", obj, msg.object);
                     printf("msg location %d\n", msg.location);
                     if (msg.location) {  // not hand
@@ -301,11 +303,13 @@ void run_ui() {
                         else {
                             if (msg.client == 0) {
                                 cli1take = 1;
+                                strcpy(handobj, msg.object);
                                 cli1hand.setTexture(tx[obj]);
                                 cli1hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
                             }
                             else {
                                 cli2take = 1;
+                                strcpy(handobj, msg.object);
                                 cli2hand.setTexture(tx[obj]);
                                 cli2hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
                             }
@@ -339,7 +343,7 @@ void run_ui() {
                     }
                     else {
                         stcust2 ++;
-                        leav2x = custx;
+                        leav2x = custx + 600;
                         clock2.restart();
                     }
                 }
@@ -356,6 +360,7 @@ void run_ui() {
                         clock1.restart();
                     }
                     else {
+                        printf("set up cust2\n");
                         stcust2 = 0;
                         mvx2 = 1200;
                         row2 = 0;
@@ -413,22 +418,27 @@ void run_ui() {
         if (mvx1 > custx) mvx1 -= 5 * dt;
         tmpy = custy;
         if (stcust2 != -1) {
-            tmpx = mvx2 + 600;
+            // printf("cust2 is not -1\n");
+            tmpx = mvx2;
             for (int i = stcust2; i < 5; i++) {
-                if (tmpx > 1200) continue;
-                customer1[i].setPosition(tmpx, tmpy);
+                if (tmpx > 1200){
+                    // printf("continue");
+                    continue;
+                }
+                customer2[i].setPosition(tmpx, tmpy);
                 window.draw(customer2[i]);
+                // printf("draw customer2\n");
                 tmpx += 80;
             }
         } 
         if (mvx2 > custx + 600) mvx2 -= 5 * dt;
-        if (leav1x != 0 && stcust1-1 >= 0) {
-            printf("move customer1\n");
+        if (leav1x > 0 && stcust1-1 >= 0) {
+            // printf("move customer1\n");
             customer1[stcust1-1].setPosition(leav1x, custy);
             window.draw(customer1[stcust1-1]);
             leav1x -= 5 * dt;
         }
-        if (leav2x != 600 && stcust2-1 >= 0) {
+        if (leav2x > 600 && stcust2-1 >= 0) {
             customer2[stcust2-1].setPosition(leav2x, custy);
             window.draw(customer2[stcust2-1]);
             leav2x -= 5 * dt;

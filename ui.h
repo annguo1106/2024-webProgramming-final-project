@@ -10,7 +10,7 @@ extern int ui_running;
 
 void add_msg(S2C servInst);
 void run_ui();
-void user_input(int x, int y);
+void user_input(int x, int y, char* obj);
 
 #ifdef __cplusplus
 }
