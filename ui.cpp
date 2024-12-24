@@ -38,22 +38,53 @@ int def_obj (string obj) {
 }
 
 
-void move (int &x, int &y, int &tox, int &toy) {
+void move (int &x, int &y, int &tox, int &toy, float dt) {
     if (x < tox) {
-        x += 5;
+        x += 5 * dt;
         if (x > tox) x = tox;
     }
     else if (x > tox) {
-        x -= 5;
+        x -= 5 * dt;
         if (x < tox) x = tox;
     }
     if (x == tox && y < toy) {
-        y += 5;
+        y += 5 * dt;
         if (y > toy) y = toy;
     }
     else if (x == tox && y > toy) {
-        y -= 5;
+        y -= 5 * dt;
         if (y < toy) y = toy;
+    }
+}
+
+int parse_order (string order) {
+    if (order == "b1111") {
+        // c1
+        return 5;
+    }
+    else if (order == "b1011") {
+        // c2
+        return 6;
+    }
+    else if (order == "b0011") {
+        // c3
+        return 7;
+    }
+    else if (order == "b0111") {
+        // c4
+        return 8;
+    }
+    else if (order == "i0") {
+        // c5
+        return 9;
+    }
+    else if (order == "i1") {
+        // c6
+        return 10;
+    }
+    else if (order == "i2") {
+        // c7
+        return 11;
     }
 }
 
@@ -89,23 +120,20 @@ void run_ui() {
     bgSprite2.setPosition(600, 0);
     
     // object sprite for cli1
+    vector<bool> showSp1(20, false);
+    vector<bool> showSp2(20, false);
     vector<sf::Texture> tx(20);
     vector<sf::Sprite> sp1(20);
     printf("setting cli1 sprite\n");
     for (int i = 0; i < 20; i++) {
         printf("setting sprite %s\n", spConf[i].name);
-        printf("hello?\n");
         if (!tx[i].loadFromFile(std::string(spConf[i].path))) {
             std::cerr << "Error: Could not load background image.\n";
             return;
         }
-        printf("load texture success\n");
         sp1[i].setTexture(tx[i]);
-        printf("set texture\n");
         sp1[i].setPosition(spConf[i].x, spConf[i].y);
-        printf("set pos\n");
         sp1[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
-        printf("set scale\n");
     }
 
     // object sprite for cli2
@@ -113,12 +141,13 @@ void run_ui() {
     printf("setting cli2 sprite\n");
     for (int i = 0; i < 20; i++) {
         printf("setting sprite %s\n", spConf[i].name);
-        sp1[i].setTexture(tx[i]);
-        sp1[i].setPosition(spConf[i].x, spConf[i].y);
-        sp1[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
+        sp2[i].setTexture(tx[i]);
+        sp2[i].setPosition(spConf[i].x, spConf[i].y);
+        sp2[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
     }
     
     bool ismoving = false;
+
     // client sp
     sf::Sprite cli1, cli2, cli1hand, cli2hand;
     sf::Texture cli1tex, cli2tex;
@@ -140,8 +169,17 @@ void run_ui() {
     cli1.setPosition(cli1x, cli1y);
     cli2.setPosition(cli2x, cli2y);
 
-    vector<bool> showSp1(20, false);
-    vector<bool> showSp2(20, false);
+    // customer sp
+    vector<sf::Sprite> customer1(11);
+    vector<sf::Sprite> customer2(11);
+    int custx = 130, custy = 160;
+    int stcust1 = -1, stcust2 = -1;
+    int leav1x = 0;
+    int leav2x = 600;
+    // printf("customer sp setup\n");
+
+    // set clock
+    sf::Clock clock;
 
     msg.op = -1;
     // std::vector<std::string> displayed_messages;
@@ -152,6 +190,11 @@ void run_ui() {
     text.setFillColor(sf::Color::White);
 
     while (ui_running && window.isOpen()) {
+        // update clock
+        sf::Time deltaTime = clock.restart();
+        float dt = deltaTime.asSeconds();
+
+        // update events
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -175,6 +218,7 @@ void run_ui() {
         // Retrieve messages from the queue
         {
             std::lock_guard<std::mutex> lock(msg_mutex);
+            // printf("retrieve msg\n");
             if (msg.op != -1) {
                 char str[50];
                 snprintf(str, sizeof(str), "%d", msg.op);
@@ -253,22 +297,44 @@ void run_ui() {
                     }
                 }
                 else if (msg.op == 12) {  // update customer
-
+                    if (msg.client == 0) {
+                        stcust1 ++;
+                        leav1x = custx;
+                    }
+                    else {
+                        stcust2 ++;
+                        leav2x = custx;
+                    }
                 }
                 else if (msg.op == 13) {  // render new order
+                    printf("do op = 13\n");
+                    if (msg.client == 0) {
+                        stcust1 = 0;
+                        for (int i = 0; i < 10; i++) {
+                            customer1[i].setTexture(tx[parse_order(msg.orders[i])]);
 
+                        }
+                    }
+                    else {
+                        stcust2 = 0;
+                        for (int i = 0; i < 10; i++) {
+                            customer2[i].setTexture(tx[parse_order(msg.orders[i])]);
+                        }
+                    }
                 }
                 // displayed_message = msg.op;
                 msg.op = -1;
             }
         }
 
+        
+
         cli1.setPosition(cli1x, cli1y);
         cli2.setPosition(cli2x, cli2y);
         cli1hand.setPosition(cli1x, cli1y);
         cli2hand.setPosition(cli2x, cli2y);
-        move(cli1x, cli1y, cli1tox, cli1toy);
-        move(cli2x, cli2y, cli2tox, cli2toy);
+        move(cli1x, cli1y, cli1tox, cli1toy, dt);
+        move(cli2x, cli2y, cli2tox, cli2toy, dt);
 
         // Render messages
         window.clear(sf::Color::Black);
@@ -285,6 +351,42 @@ void run_ui() {
             if (showSp1[i]) {
                 window.draw(sp1[i]);
             }
+        }
+        // draw custoer
+        int tmpx = custx, tmpy = custy;
+        if (stcust1 != -1) {
+            for (int i = stcust1; i < 10; i++) {
+                customer1[i].setPosition(tmpx, tmpy);
+                window.draw(customer1[i]);
+                tmpx += 80;
+                if (i == stcust1+4){
+                    tmpy -= 150;
+                    tmpx = custx;
+                }
+            }
+        }
+        if (stcust2 != -1) {
+            tmpx = custx + 600;
+            for (int i = stcust2; i < 10; i++) {
+                customer1[i].setPosition(tmpx, tmpy);
+                window.draw(customer2[i]);
+                tmpx += 80;
+                if (i == stcust2+4) {
+                    tmpy -= 150;
+                    tmpx = custx + 600;
+                }
+            }
+        } 
+        if (leav1x != 0 && stcust1-1 >= 0) {
+            printf("move customer1\n");
+            customer1[stcust1-1].setPosition(leav1x, custy);
+            window.draw(customer1[stcust1-1]);
+            leav1x -= 5 * dt;
+        }
+        if (leav2x != 600 && stcust2-1 >= 0) {
+            customer2[stcust2-1].setPosition(leav2x, custy);
+            window.draw(customer2[stcust2-1]);
+            leav2x -= 5 * dt;
         }
         float y_offset = 10.0f;
         // for (const auto& msg : displayed_messages) {

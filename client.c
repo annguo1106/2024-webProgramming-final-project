@@ -66,48 +66,30 @@ void parse_server_inst (char* inst) {
     else if (op == 13) {
         printf("orders:\n");
         servInst.op = 13;
-        char ttmp[50];
+        char ttmp[100];
         sscanf(tmp, "%d %[^\n]", &servInst.client, ttmp);
         // printf("tmp: %s", ttmp);
         char* token;
         token = strtok(ttmp, " ");
         int count = 0;
         while (token != NULL) {
-            char* orderstr = strdup(token);
-            printf("orderstr: %s\n", orderstr);
-            Order order;
-            if (strcmp(orderstr, "b1111") == 0) {
-                order.op = 1;
-
-            }
-            else if (strcmp(orderstr, "b1011") == 0) {
-                order.op = 1;
-            }
-            else if (strcmp(orderstr, "b0111") == 0) {
-                order.op = 1;
-            }
-            else if (strcmp(orderstr, "b0011") == 0) {
-                order.op = 1;
-            }
-            else if (strcmp(orderstr, "i0") == 0) {
-
-            }
-            else if (strcmp(orderstr, "i1") == 0) {
-
-            }
-            else if (strcmp(orderstr, "i2") == 0) {
-
-            }
-            s2c.orders[count] = 
-            free(order);
+            printf("count = %d\n", count);
+            // char* orderstr = strdup(token);
+            strcpy(servInst.orders[count], token);
+            printf("token: %d %s\n", count, servInst.orders[count]);
+            // free(token);
+            printf("1\n");
             token = strtok(NULL, " ");
+            printf("2\n");
+            count ++;
         }
+        printf("3\n");
     }
     // else if (op == 14) {
     //     servInst.op = 14;
 
     // }
-
+    printf("4\n");
 }
 
 void location (int x, int y, int* location, char* object) {
@@ -238,6 +220,7 @@ void pass_msg (int sockfd) {
                 err_quit("str_cli: server terminated prematurely");
             printf("get host msg: %s", recvline);
             parse_server_inst(recvline);
+            printf("after parse server inst\n");
             // add_msg(recvline);
             add_msg(servInst);
         }

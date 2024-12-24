@@ -6,25 +6,25 @@ extern "C" {
 #endif
 
 // burger order
-typedef struct Burger {
-    int lettuce;
-    int tomato;
-    int meat;
-    int bread;
-} Burger;
+// typedef struct Burger {
+//     int lettuce;
+//     int tomato;
+//     int meat;
+//     int bread;
+// } Burger;
 
 // icecream order
-typedef struct IceCream {
-    int cone;
-    int f1;
-    int f2;
-} IceCream;
+// typedef struct IceCream {
+//     int cone;
+//     int f1;
+//     int f2;
+// } IceCream;
 
-typedef struct Order {
-    int op;  // 0 for icecream, 1 for hamburger
-    IceCream icecream;
-    Burger burger;
-} Order;
+// typedef struct Order {
+//     int op;  // 0 for icecream, 1 for hamburger
+    // IceCream icecream;
+    // Burger burger;
+// } Order;
 
 // [object] [from] [to] [to location] [action]
 typedef struct C2S {
@@ -46,7 +46,8 @@ typedef struct S2C {
     int location;
     int action;  // 0-slicing
     int complete;  // order complete or customer leaved
-    Order orders[15];  // new orders
+    // Order orders[15];  // new orders
+    char orders[20][50];
 } S2C;
 
 typedef struct Sprite {
@@ -57,26 +58,26 @@ typedef struct Sprite {
 } Sprite;
 
 const Sprite spConf[] = {
-    {"b1", 123, 687, 0.5, 0.5, "src/b1.png"},
-    {"b2", 123, 687, 0.5, 0.5, "src/b2.png"},
-    {"b3", 123, 687, 0.5, 0.5, "src/b3.png"},
-    {"b4", 123, 687, 0.5, 0.5, "src/b4.png"},
-    {"bread", 123, 687, 0.5, 0.5, "src/bread.png"},
-    {"c1", 164, 130, 1, 1, "src/c1.png"},
-    {"c2", 164, 130, 1, 1, "src/c2.png"},
-    {"c3", 164, 130, 1, 1, "src/c3.png"},
-    {"c4", 164, 130, 1, 1, "src/c4.png"},
-    {"c5", 164, 130, 1, 1, "src/c5.png"},
-    {"c6", 164, 130, 1, 1, "src/c6.png"},
-    {"c7", 164, 130, 1, 1, "src/c7.png"},
-    {"cone", 10, 20, 0.5, 0.5, "src/cone.png"},
-    {"i1", 10, 20, 0.5, 0.5, "src/i1.png"},
-    {"i2", 10, 20, 0.5, 0.5, "src/i2.png"},
-    {"i3", 10, 20, 0.5, 0.5, "src/i3.png"},
-    {"let", 123, 687, 0.5, 0.5, "src/let.png"},
-    {"meat", 123, 687, 0.5, 0.5, "src/meat.png"},
-    {"s_t", 240, 687, 0.5, 0.5, "src/s_t.png"},
-    {"tomato", 123, 687, 0.5, 0.5, "src/tomato.png"},
+    {"b1", 123, 687, 0.5, 0.5, "src/b1.png"},  // 0
+    {"b2", 123, 687, 0.5, 0.5, "src/b2.png"},  // 1
+    {"b3", 123, 687, 0.5, 0.5, "src/b3.png"},  // 2
+    {"b4", 123, 687, 0.5, 0.5, "src/b4.png"},  // 3
+    {"bread", 123, 687, 0.5, 0.5, "src/bread.png"},  // 4
+    {"c1", 164, 130, 1, 1, "src/c1.png"},  // 5
+    {"c2", 164, 130, 1, 1, "src/c2.png"},  // 6
+    {"c3", 164, 130, 1, 1, "src/c3.png"},  // 7
+    {"c4", 164, 130, 1, 1, "src/c4.png"},  // 8
+    {"c5", 164, 130, 1, 1, "src/c5.png"},  // 9
+    {"c6", 164, 130, 1, 1, "src/c6.png"},  // 10
+    {"c7", 164, 130, 1, 1, "src/c7.png"},  // 11
+    {"cone", 10, 20, 0.5, 0.5, "src/cone.png"},  // 12
+    {"i1", 10, 20, 0.5, 0.5, "src/i1.png"},  // 13
+    {"i2", 10, 20, 0.5, 0.5, "src/i2.png"},  // 14
+    {"i3", 10, 20, 0.5, 0.5, "src/i3.png"},  // 15
+    {"let", 123, 687, 0.5, 0.5, "src/let.png"},  // 16
+    {"meat", 123, 687, 0.5, 0.5, "src/meat.png"},  // 17
+    {"s_t", 240, 687, 0.5, 0.5, "src/s_t.png"},  // 18
+    {"tomato", 123, 687, 0.5, 0.5, "src/tomato.png"},  // 19
 };
 
 #ifdef __cplusplus
