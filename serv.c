@@ -187,8 +187,9 @@ void free_orders(char **orders, int count) {
 
 void mes10(int player_id, int x, int y, char *obj, int isNotHand, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "10 %d %d %d %s %d\n", player_id, x, y, obj, isNotHand);
-    printf("sendline: %s\n", sendline);
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "10 %d %d %d %s %d\n", isSelf, x, y, obj, isNotHand);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -206,8 +207,9 @@ void mes10(int player_id, int x, int y, char *obj, int isNotHand, int sendto){
 
 void mes11(int player_id, int from_x, int from_y, int to_x, int to_y, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "11 %d %d %d %d %d %s\n", player_id, from_x, from_y, to_x, to_y, hand[player_id]);
-
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "11 %d %d %d %d %d %s\n", isSelf, from_x, from_y, to_x, to_y, hand[player_id]);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -222,8 +224,9 @@ void mes11(int player_id, int from_x, int from_y, int to_x, int to_y, int sendto
 
 void mes12(int player_id, int complete, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "12 %d %d\n", player_id, complete);
-
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "12 %d %d\n", isSelf, complete);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -239,8 +242,9 @@ void mes12(int player_id, int complete, int sendto){
 
 void mes13(char **order, int player_id, int sendto){
     char sendline[MAXLINE], str_sec[10];
+    bool isSelf = (player_id != sendto);
     snprintf(str_sec, sizeof(str_sec), "%d", sec_cus[player_id]);
-    snprintf(sendline, sizeof(sendline), "13 %d", player_id);
+    snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
     for(int i=0; i<5; i++){
         strcat(sendline, " ");
         strcat(sendline, order[i]);
@@ -248,7 +252,7 @@ void mes13(char **order, int player_id, int sendto){
         strcat(sendline, str_sec);
     }
     strcat(sendline, "\n");
-
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -264,7 +268,8 @@ void mes13(char **order, int player_id, int sendto){
 
 void mes14(int player_id, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "14 %d\n", player_id);
+    bool isSelf = (player_id != sendto);
+    printf("send to connfd[%d]: %s", sendto, sendline);
 
     size_t len = strlen(sendline);
 
@@ -282,7 +287,7 @@ void mes14(int player_id, int sendto){
 void mes99(int sendto){
     char sendline[5];
     snprintf(sendline, sizeof(sendline), "99\n");
-
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
