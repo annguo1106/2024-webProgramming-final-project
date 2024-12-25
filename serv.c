@@ -43,6 +43,40 @@ void sig_chld(int signo){
     return;
 }
 
+ssize_t safe_write(int fd, const void *buf, size_t count) {
+    ssize_t nwritten;
+    
+    while (1) {
+        nwritten = write(fd, buf, count);
+        if (nwritten >= 0) {
+            // Write succeeded
+            return nwritten;
+        }
+        if (errno == EINTR) {
+            continue;
+        }
+        // Other errors
+        return -1;
+    }
+}
+
+ssize_t safe_read(int fd, void *buf, size_t count) {
+    ssize_t nread;
+    
+    while (1) {
+        nread = read(fd, buf, count);
+        if (nread >= 0) {
+            return nread;
+        }
+        
+        if (errno == EINTR) {
+            continue;
+        }
+        
+        return -1;
+    }
+}
+
 void timer_handler(int signum, siginfo_t *info, void *context) {
     printf("\n- handler\n");
     struct timerData *data = (struct timerData *)info->si_value.sival_ptr;
@@ -406,7 +440,20 @@ void handle_message(char* recvline, int player_id){
     printf("[%d] recvline content: %s\n", player_id, recvline);
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
-        if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
+        if(strcmp(obj, "50") == 0){
+            // send first order
+            orders[0] = get_new_order(5);
+            orders[1] = get_new_order(5);
+            mes13(orders[0], 0, 0);
+            mes13(orders[1], 1, 1);
+            mes13(orders[0], 0, 1);
+            mes13(orders[1], 1, 0);
+
+            //set customer timer
+            timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
+            timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
+        }
+        else if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
             // not chopped lettuce or tomato
             if(to_loc == 40 || to_loc == 41){
                 // to hand
@@ -846,19 +893,9 @@ main(int argc, char **argv)
             assem[0] = strdup("");
             assem[1] = strdup("");
 
-            // send order
-            orders[0] = get_new_order(5);
-            orders[1] = get_new_order(5);
-            mes13(orders[0], 0, 0);
-            mes13(orders[1], 1, 1);
-            mes13(orders[0], 0, 1);
-            mes13(orders[1], 1, 0);
+            // init order_cnt
             order_cnt[0] = 5;
             order_cnt[1] = 5;
-
-            //set customer timer
-            timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
-            timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
             
             for( ; ; ){
 
@@ -898,9 +935,9 @@ main(int argc, char **argv)
                 for(int k=0; k<2; k++){
                     // write to fd
                     if(FD_ISSET(connfd[k], &wset) && ( (n = iptr[k] - optr[k]) > 0)){
-                        if ( (nwritten = write(connfd[k], optr[k], n)) < 0) {
+                        if ( (nwritten = safe_write(connfd[k], optr[k], n)) < 0) {
                             if (errno != EWOULDBLOCK)
-                                err_sys("write error to connfd[0]");
+                                err_sys("write error to connfd[%d]", k);
                         }
                         else {
                             fprintf(stderr, "%s: wrote %d bytes to connfd[%d]\n", gf_time(), nwritten, k);
@@ -915,7 +952,7 @@ main(int argc, char **argv)
                     // read from fd
                     memset(recvline, 0, sizeof(recvline));
                     if(FD_ISSET(connfd[k], &rset)){
-                        if ( (n = read(connfd[k], recvline, MAXLINE)) == 0) {
+                        if ( (n = safe_read(connfd[k], recvline, MAXLINE)) == 0) {
                             // user quit
                             n_user--;
                             printf("Player %d quit, n_user = %d\n", k, n_user);
@@ -938,8 +975,6 @@ main(int argc, char **argv)
                         }
                         else{
                             handle_message(recvline, k);
-                            // printf("buffer0: %s\n", buffer[0]);
-                            // printf("buffer1: %s\n", buffer[1]);
                         }
                     }
                 }
