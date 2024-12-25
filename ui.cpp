@@ -310,7 +310,7 @@ void run_ui() {
                             }
                             else {
                                 cli2take = 1;
-                                strcpy(handobj, msg.object);
+                                // strcpy(handobj, msg.object);
                                 // obj = def_obj(msg.object, msg.toX); 
                                 cli2hand.setTexture(tx[obj]);
                                 cli2hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
