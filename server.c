@@ -19,9 +19,10 @@ int assem_cnt[2] = {0};
 char buffer[2][MAXLINE];
 char *iptr[2], *optr[2];
 
-// current order
+// order settings
 int order_cnt[2] = {0, 0, 0};
 char **orders[2];
+bool start_cnt = 0;
 
 // timer settings
 timer_t timer_cus[2];
@@ -41,6 +42,40 @@ void sig_chld(int signo){
 
 	while((pid = waitpid(-1, &status, WNOHANG)) > 0);
     return;
+}
+
+ssize_t safe_write(int fd, const void *buf, size_t count) {
+    ssize_t nwritten;
+    
+    while (1) {
+        nwritten = write(fd, buf, count);
+        if (nwritten >= 0) {
+            // Write succeeded
+            return nwritten;
+        }
+        if (errno == EINTR) {
+            continue;
+        }
+        // Other errors
+        return -1;
+    }
+}
+
+ssize_t safe_read(int fd, void *buf, size_t count) {
+    ssize_t nread;
+    
+    while (1) {
+        nread = read(fd, buf, count);
+        if (nread >= 0) {
+            return nread;
+        }
+        
+        if (errno == EINTR) {
+            continue;
+        }
+        
+        return -1;
+    }
 }
 
 void timer_handler(int signum, siginfo_t *info, void *context) {
@@ -187,8 +222,9 @@ void free_orders(char **orders, int count) {
 
 void mes10(int player_id, int x, int y, char *obj, int isNotHand, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "10 %d %d %d %s %d\n", player_id, x, y, obj, isNotHand);
-    printf("sendline: %s\n", sendline);
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "10 %d %d %d %s %d\n", isSelf, x, y, obj, isNotHand);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -206,8 +242,9 @@ void mes10(int player_id, int x, int y, char *obj, int isNotHand, int sendto){
 
 void mes11(int player_id, int from_x, int from_y, int to_x, int to_y, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "11 %d %d %d %d %d %s\n", player_id, from_x, from_y, to_x, to_y, hand[player_id]);
-
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "11 %d %d %d %d %d %s\n", isSelf, from_x, from_y, to_x, to_y, hand[player_id]);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -222,8 +259,9 @@ void mes11(int player_id, int from_x, int from_y, int to_x, int to_y, int sendto
 
 void mes12(int player_id, int complete, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "12 %d %d\n", player_id, complete);
-
+    bool isSelf = (player_id != sendto);
+    snprintf(sendline, sizeof(sendline), "12 %d %d\n", isSelf, complete);
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -239,8 +277,9 @@ void mes12(int player_id, int complete, int sendto){
 
 void mes13(char **order, int player_id, int sendto){
     char sendline[MAXLINE], str_sec[10];
+    bool isSelf = (player_id != sendto);
     snprintf(str_sec, sizeof(str_sec), "%d", sec_cus[player_id]);
-    snprintf(sendline, sizeof(sendline), "13 %d", player_id);
+    snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
     for(int i=0; i<5; i++){
         strcat(sendline, " ");
         strcat(sendline, order[i]);
@@ -248,7 +287,7 @@ void mes13(char **order, int player_id, int sendto){
         strcat(sendline, str_sec);
     }
     strcat(sendline, "\n");
-
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -264,7 +303,8 @@ void mes13(char **order, int player_id, int sendto){
 
 void mes14(int player_id, int sendto){
     char sendline[MAXLINE];
-    snprintf(sendline, sizeof(sendline), "14 %d\n", player_id);
+    bool isSelf = (player_id != sendto);
+    printf("send to connfd[%d]: %s", sendto, sendline);
 
     size_t len = strlen(sendline);
 
@@ -282,7 +322,7 @@ void mes14(int player_id, int sendto){
 void mes99(int sendto){
     char sendline[5];
     snprintf(sendline, sizeof(sendline), "99\n");
-
+    printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
     // Check if there is enough space in the buffer
@@ -401,7 +441,22 @@ void handle_message(char* recvline, int player_id){
     printf("[%d] recvline content: %s\n", player_id, recvline);
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
-        if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
+        if(strcmp(obj, "50") == 0){
+            if(start_cnt == 0){
+                start_cnt = 1;
+                return;
+            }
+            // send first order to player[player_id]
+            mes13(orders[0], 0, 0);
+            mes13(orders[1], 1, 1);
+            mes13(orders[0], 0, 1);
+            mes13(orders[1], 1, 0);
+
+            //set customer timer for player[player_id]
+            timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
+            timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
+        }
+        else if(strcmp(obj, "l0") == 0 || strcmp(obj, "t0") == 0){
             // not chopped lettuce or tomato
             if(to_loc == 40 || to_loc == 41){
                 // to hand
@@ -841,19 +896,11 @@ main(int argc, char **argv)
             assem[0] = strdup("");
             assem[1] = strdup("");
 
-            // send order
+            // init order
             orders[0] = get_new_order(5);
             orders[1] = get_new_order(5);
-            mes13(orders[0], 0, 0);
-            mes13(orders[1], 1, 1);
-            mes13(orders[0], 0, 1);
-            mes13(orders[1], 1, 0);
             order_cnt[0] = 5;
             order_cnt[1] = 5;
-
-            //set customer timer
-            timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
-            timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
             
             for( ; ; ){
 
@@ -893,9 +940,9 @@ main(int argc, char **argv)
                 for(int k=0; k<2; k++){
                     // write to fd
                     if(FD_ISSET(connfd[k], &wset) && ( (n = iptr[k] - optr[k]) > 0)){
-                        if ( (nwritten = write(connfd[k], optr[k], n)) < 0) {
+                        if ( (nwritten = safe_write(connfd[k], optr[k], n)) < 0) {
                             if (errno != EWOULDBLOCK)
-                                err_sys("write error to connfd[0]");
+                                err_sys("write error to connfd[%d]", k);
                         }
                         else {
                             fprintf(stderr, "%s: wrote %d bytes to connfd[%d]\n", gf_time(), nwritten, k);
@@ -910,7 +957,7 @@ main(int argc, char **argv)
                     // read from fd
                     memset(recvline, 0, sizeof(recvline));
                     if(FD_ISSET(connfd[k], &rset)){
-                        if ( (n = read(connfd[k], recvline, MAXLINE)) == 0) {
+                        if ( (n = safe_read(connfd[k], recvline, MAXLINE)) == 0) {
                             // user quit
                             n_user--;
                             printf("Player %d quit, n_user = %d\n", k, n_user);
@@ -933,8 +980,6 @@ main(int argc, char **argv)
                         }
                         else{
                             handle_message(recvline, k);
-                            // printf("buffer0: %s\n", buffer[0]);
-                            // printf("buffer1: %s\n", buffer[1]);
                         }
                     }
                 }

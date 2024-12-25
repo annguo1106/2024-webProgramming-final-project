@@ -214,7 +214,8 @@ void run_ui() {
 
     msg.op = -1;
     // std::vector<std::string> displayed_messages;
-
+    printf("add user input 50\n");
+    user_input(1, 1, "50");
     while (ui_running && window.isOpen()) {
         // update clock
         sf::Time deltaTime = clock.restart();
@@ -250,6 +251,7 @@ void run_ui() {
             if (msg.op != -1) {
                 char str[50];
                 snprintf(str, sizeof(str), "%d", msg.op);
+                printf("received op = %d\n", msg.op);
                 displayed_message = str;
                 int obj;
                 if (msg.op == 10) {  // update object status
@@ -353,7 +355,7 @@ void run_ui() {
                     }
                 }
                 else if (msg.op == 13) {  // render new order
-                    printf("do op = 13\n");
+                    // printf("do op = 13\n");
                     if (msg.client == 0) {
                         stcust1 = 0;
                         mvx1 = 600;

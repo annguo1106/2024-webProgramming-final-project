@@ -30,6 +30,7 @@ void user_input (int X, int Y, char* obj) {
     mouseX = X;
     mouseY = Y;
     strcpy(handobj, obj);
+    printf("get obj %s\n", obj);
     pthread_mutex_unlock(&mutex);
 }
 
@@ -54,7 +55,7 @@ void parse_server_inst (char* inst) {
     char tmp[50];
     sscanf(inst, "%d %[^\n]", &op, tmp);
     // printf("tmp: %s\n", tmp);
-    printf("op = %d\n", op);
+    // printf("op = %d\n", op);
     if (op == 10) {
         servInst.op = 10;
         sscanf(tmp, "%d %d %d %s %d", &servInst.client, &servInst.toX, &servInst.toY, servInst.object, &servInst.location);
@@ -83,7 +84,7 @@ void parse_server_inst (char* inst) {
             // char* orderstr = strdup(token);
             if (count % 2 == 0) strcpy(servInst.orders[count/2], token);
             else servInst.time[count/2] = atoi(token);
-            printf("token: %d %s\n", count, servInst.orders[count/2]);
+            // printf("token: %d %s\n", count, servInst.orders[count/2]);
             // printf("token: %d %s\n", count, token);
             // free(token);
             token = strtok(NULL, " ");
@@ -98,7 +99,9 @@ void parse_server_inst (char* inst) {
 
 void location (int x, int y, int* location, char* object) {
     *location = 6;
-    strcpy(object, "0");
+    printf("now obj %s\n", object);
+    if (strcmp(object, "50") != 0) strcpy(object, "0");
+    printf("now obj %s\n", object);
     if (x <= 90) {  // burger
         if (338 <= y && y <= 410) {  // lettuce
             if (premouseX <= 100 && 338 <= premouseY && premouseY <= 410) {
@@ -178,11 +181,6 @@ void location (int x, int y, int* location, char* object) {
             strcpy(object, handobj);
         }
     }
-    else {  // just move
-        *location = 6;
-        // object = "0";
-        strcpy(object, "0");
-    }
     // printf("in proce, obj: %s\n", object);
 }
 
@@ -193,6 +191,8 @@ char* parse_input (int x, int y,char* input) {
     c2s.toX = nowmouseX; c2s.toY = nowmouseY;
     // location(premouseX, premouseY, &c2s.fromLoc, c2s.obj);
     memset(c2s.object, 0, sizeof(c2s.object));
+    strcpy(c2s.object, handobj);
+    printf("hand obj = %s\n", c2s.object);
     location(nowmouseX, nowmouseY, &c2s.toLoc, c2s.object);
     c2s.action = 0;
     if (preloc == 2 && c2s.toLoc == 2) {  // assemb
@@ -239,6 +239,8 @@ void pass_msg (int sockfd) {
             parse_server_inst(recvline);
             // printf("after parse server inst\n");
             // add_msg(recvline);
+            printf("add msg to ui, op = %d\n", servInst.op);
+            // snprintf(input, 200, "%s %d %d %d %d %d %d\n", );
             add_msg(servInst);
         }
         premouseX = nowmouseX; premouseY = nowmouseY;
