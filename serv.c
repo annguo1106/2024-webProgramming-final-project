@@ -31,8 +31,10 @@ timer_t timer_chop[2];
 int sec_chop = 5;
 
 // game logic settings
-int goal = 3;
+int goal = 2;
 int fin_cnt[2] = {0};
+char id[2][MAXLINE];
+bool endgame = false;
 
 struct timerData{
     int player_id;
@@ -134,10 +136,12 @@ void timer_handler(int signum, siginfo_t *info, void *context) {
                 obj = strdup("l1");
             else if(strcmp(chop[player_id], "t0") == 0)
                 obj = strdup("t1");
+            else
+                return;
 
             // remove unchopped
             mes10(player_id, x, y, "empty", 1, 0);
-            mes10(player_id, x, y, "emtpy", 1, 1);
+            mes10(player_id, x, y, "empty", 1, 1);
             // put chopped
             mes10(player_id, x, y, obj, 1, 0);
             mes10(player_id, x, y, obj, 1, 1);
@@ -312,7 +316,6 @@ void mes13(char **order, int player_id, int sendto){
     bool isSelf = (player_id != sendto);
     snprintf(str_sec, sizeof(str_sec), "%d", sec_cus[player_id]);
     snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
-    snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
     for(int i=0; i<5; i++){
         strcat(sendline, " ");
         strcat(sendline, order[i]);
@@ -353,9 +356,24 @@ void mes14(int player_id, int sendto){
     }
 }
 
-void mes98(bool win, int sendto){
-    char sendline[5];
-    snprintf(sendline, sizeof(sendline), "98 %d\n\0", win);
+void mes97(char *buf, int sendto){
+    char sendline[MAXLINE];
+    snprintf(sendline, sizeof(sendline), "97 %s\n\0", buf);
+    printf("send to connfd[%d]: %s", sendto, sendline);
+    size_t len = strlen(sendline);
+
+    if (iptr[sendto] + len < &buffer[sendto][MAXLINE]) {
+        memcpy(iptr[sendto], sendline, len);
+        iptr[sendto] += len;
+    }
+    else {
+        fprintf(stderr, "Error: Not enough space in the buffer to add mes97.\n");
+    }
+}
+
+void mes98(char *buf, int sendto){
+    char sendline[MAXLINE];
+    snprintf(sendline, sizeof(sendline), "98 %s\n\0", buf);
     printf("send to connfd[%d]: %s", sendto, sendline);
     size_t len = strlen(sendline);
 
@@ -365,23 +383,6 @@ void mes98(bool win, int sendto){
     }
     else {
         fprintf(stderr, "Error: Not enough space in the buffer to add mes98.\n");
-    }
-}
-
-void mes99(int sendto){
-    char sendline[5];
-    snprintf(sendline, sizeof(sendline), "99\n\0");
-    printf("send to connfd[%d]: %s", sendto, sendline);
-    size_t len = strlen(sendline);
-
-    // Check if there is enough space in the buffer
-    if (iptr[sendto] + len < &buffer[sendto][MAXLINE]) {
-        memcpy(iptr[sendto], sendline, len);
-        // printf("cpy complete\n");
-        iptr[sendto] += len;
-    }
-    else {
-        fprintf(stderr, "Error: Not enough space in the buffer to add mes99.\n");
     }
 }
 
@@ -491,10 +492,13 @@ void handle_message(char* recvline, int player_id){
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
         if(strcmp(obj, "50") == 0){
+            char sendline[MAXLINE];
+
             if(start_cnt == 0){
                 start_cnt = 1;
                 return;
             }
+
             // send first order to player[player_id]
             mes13(orders[0], 0, 0);
             mes13(orders[1], 1, 1);
@@ -723,7 +727,7 @@ void handle_message(char* recvline, int player_id){
             }
             else if(to_loc == 5){
                 // hand to customer
-                int cur = 10 - order_cnt[player_id];
+                int cur = 5 - order_cnt[player_id];
                 if(strcmp(hand[player_id], obj) == 0 && strcmp(orders[player_id][cur], obj) == 0){
                     // reset timer
                     update_timer(timer_cus[player_id], sec_cus[player_id] + 2, sec_cus[player_id]);
@@ -732,18 +736,18 @@ void handle_message(char* recvline, int player_id){
                     mes10(player_id, from_x, from_y, "empty", 0, 1);
                     hand[player_id] = strdup("");
                     printf("hand[%d]: %s\n", player_id, hand[player_id]);
-                    // check if win
-                    fin_cnt[player_id]++;
-                    if(fin_cnt[player_id] == goal){
-                        // game end
-                        mes98(player_id, 1);
-                        mes98(!player_id, 0);
-                        return;
-                    }
                     // complete order
                     order_cnt[player_id]--;
                     mes12(player_id, 1, 0);
                     mes12(player_id, 1, 1);
+                    // check if win
+                    fin_cnt[player_id]++;
+                    if(fin_cnt[player_id] == goal){
+                        // game end
+                        mes97("You win!", player_id);
+                        mes97("You lose.", !player_id);
+                        endgame = true;
+                    }
                 }
                 else{
                     printf("not fit: hand: %s, order: %s\n", hand[player_id], orders[player_id][cur]);
@@ -768,7 +772,7 @@ void handle_message(char* recvline, int player_id){
             }
             else if(to_loc == 5){
                 // hand to customer
-                int cur = 10 - order_cnt[player_id];
+                int cur = 5 - order_cnt[player_id];
                 if(strcmp(hand[player_id], obj) == 0 && strcmp(orders[player_id][cur], obj) == 0){
                     // reset timer
                     update_timer(timer_cus[player_id], sec_cus[player_id] + 2, sec_cus[player_id]);
@@ -777,18 +781,18 @@ void handle_message(char* recvline, int player_id){
                     mes10(player_id, from_x, from_y, "empty", 0, 1);
                     hand[player_id] = strdup("");
                     printf("hand[%d]: %s\n", player_id, hand[player_id]);
-                    // check if win
-                    fin_cnt[player_id]++;
-                    if(fin_cnt[player_id] == goal){
-                        // game end
-                        mes98(player_id, 1);
-                        mes98(!player_id, 0);
-                        return;
-                    }
                     // complete order
                     order_cnt[player_id]--;
                     mes12(player_id, 1, 0);
                     mes12(player_id, 1, 1);
+                    // check if win
+                    fin_cnt[player_id]++;
+                    if(fin_cnt[player_id] == goal){
+                        // game end
+                        mes97("You win!", player_id);
+                        mes97("You lose.", !player_id);
+                        endgame = true;
+                    }
                 }
                 else{
                     printf("not fit: hand: %s, order: %s\n", hand[player_id], orders[player_id][cur]);
@@ -806,9 +810,13 @@ void handle_message(char* recvline, int player_id){
                 mes11(player_id, from_x, from_y, to_x, to_y, 0);
                 mes11(player_id, from_x, from_y, to_x, to_y, 1);
             }
-            else if(to_loc == 2 && action == 0){
-                // pick up obj on assemble counter
-                if(strcmp(assem[player_id], "") && strcmp(hand[player_id], "") == 0){
+            else if(to_loc == 2){
+                // click on assemble counter
+                if(strcmp(assem[player_id], "") == 0){
+                    // assemble action
+                    assem_logic(player_id, to_x, to_y);
+                }
+                else if(strcmp(hand[player_id], "") == 0){
                     // delete obj on chopping board
                     mes10(player_id, to_x, to_y, "empty", 1, 0);
                     mes10(player_id, to_x, to_y, "empty", 1, 1);
@@ -828,54 +836,13 @@ void handle_message(char* recvline, int player_id){
             else if(to_loc == 1 && action == 0){
                 // pick up obj on chopping board
                 if(strcmp(chop[player_id], "") && strcmp(hand[player_id], "") == 0){
-                    // delete obj on chopping board
-                    mes10(player_id, to_x, to_y, "empty", 1, 0);
-                    mes10(player_id, to_x, to_y, "empty", 1, 1);
-                    // obj in hands
-                    mes10(player_id, 0, 0, chop[player_id], 0, 0);
-                    mes10(player_id, 0, 0, chop[player_id], 0, 1);
 
-                    hand[player_id] = strdup(chop[player_id]);
-                    chop[player_id] = strdup("");
-                    printf("hand[%d]: %s, chop: %s\n", player_id, hand[player_id], chop[player_id]);
-                }
-                else{
-                    printf("not fit: hand: %s, chop: %s\n", hand[player_id], chop[player_id]);
-                    mes14(player_id, player_id);
-                }
-            }
-            else{
-                printf("invalid player move\n");
-                mes14(player_id, player_id);
-            }
-        }
-        else if(strcmp(obj, "empty") == 0){
-            if(to_loc == 2 && action == 1){
-                // assemble action
-                assem_logic(player_id, to_x, to_y);
-            }
-            else if(to_loc == 2 && action == 0){
-                // pick up obj on assemble counter
-                if(strcmp(assem[player_id], "") && strcmp(hand[player_id], "") == 0){
-                    // delete obj on chopping board
-                    mes10(player_id, to_x, to_y, "empty", 1, 0);
-                    mes10(player_id, to_x, to_y, "empty", 1, 1);
-                    // obj in hands
-                    mes10(player_id, 0, 0, assem[player_id], 0, 0);
-                    mes10(player_id, 0, 0, assem[player_id], 0, 1);
+                    if(timer_getoverrun(timer_chop[player_id]) == 0){
+                        // timer has not expire
+                        update_timer(0, 0, timer_chop[player_id]);
+                        printf("chop timer stopped\n");
+                    }
 
-                    hand[player_id] = strdup(assem[player_id]);
-                    assem[player_id] = strdup("");
-                    printf("hand[%d]: %s, assem: %s\n", player_id, hand[player_id], assem[player_id]);
-                }
-                else{
-                    printf("not fit: hand: %s, assem: %s\n", hand[player_id], assem[player_id]);
-                    mes14(player_id, player_id);
-                }
-            }
-            else if(to_loc == 1 && action == 0){
-                // pick up obj on chopping board
-                if(strcmp(chop[player_id], "") && strcmp(hand[player_id], "") == 0){
                     // delete obj on chopping board
                     mes10(player_id, to_x, to_y, "empty", 1, 0);
                     mes10(player_id, to_x, to_y, "empty", 1, 1);
@@ -928,7 +895,6 @@ main(int argc, char **argv)
 
     fd_set rset, wset;
     int maxfd, n;
-    char id[2][MAXLINE];
     bool eof[2] = {false, false, false};
     char *cliaddr1, *cliaddr2;
     printf("server listening...\n");
@@ -951,8 +917,8 @@ main(int argc, char **argv)
         id[0][n] = '\0';
         printf("player0: %s\n", id[0]);
         fflush(stdout);
-        snprintf(sendline, sizeof(sendline), "You are the 1st player. Wait for the second one!\n");
-        Writen(connfd[0], sendline, strlen(sendline));
+        // snprintf(sendline, sizeof(sendline), "98 You are the 1st player. Wait for the second one!\n");
+        // Writen(connfd[0], sendline, strlen(sendline));
 
         // user 2
         if((connfd[1] = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0){
@@ -970,13 +936,6 @@ main(int argc, char **argv)
         id[1][n] = '\0';
         printf("player1: %s\n", id[1]);
         fflush(stdout);
-        snprintf(sendline, sizeof(sendline), "You are the 2nd player.\n");
-        Writen(connfd[1], sendline, strlen(sendline));
-
-        snprintf(sendline, sizeof(sendline), "The second player is %s from %s.\n", id[1], cliaddr2);
-        Writen(connfd[0], sendline, strlen(sendline));
-        snprintf(sendline, sizeof(sendline), "The first player is %s from %s.\n", id[0], cliaddr1);
-        Writen(connfd[1], sendline, strlen(sendline));
 
         // set fd nonblocking
         val = Fcntl(connfd[0], F_GETFL, 0);
@@ -1057,6 +1016,7 @@ main(int argc, char **argv)
                                 err_sys("write error to connfd[%d]", k);
                         }
                         else {
+                            // fsync(connfd[k]);
                             fprintf(stderr, "%s: wrote %d bytes to connfd[%d]\n", gf_time(), nwritten, k);
                             optr[k] += nwritten;		/* # just written */
                             if (optr[k] == iptr[k])
@@ -1074,12 +1034,10 @@ main(int argc, char **argv)
                             n_user--;
                             printf("Player %d quit, n_user = %d\n", k, n_user);
                             if(n_user == 1){
-                                mes99(!k);
+                                mes98("The other player exitted.", !k);
                                 eof[k] = true;
-                                if (optr[k] == iptr[k])
-                                    Shutdown(connfd[k], SHUT_WR);
                             }
-                            else{
+                            else if(n_user == 0){
                                 if (connfd[k] >= 0) {
                                     if (shutdown(connfd[k], SHUT_WR) < 0) {
                                         perror("shutdown error");
@@ -1095,6 +1053,9 @@ main(int argc, char **argv)
                             }
                         }
                         else if(n < 0){
+                            if (errno == ECONNRESET) {
+                                break;
+                            }
                             if (errno != EWOULDBLOCK)
                                 err_sys("read error on connfd");
                         }
@@ -1103,8 +1064,10 @@ main(int argc, char **argv)
                         }
                     }
                 }
-                if(eof[0] && eof[1])
+
+                if(eof[0] && eof[1]){
                     break;
+                }
             }
             Close(connfd[0]);
             Close(connfd[1]);
