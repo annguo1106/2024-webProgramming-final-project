@@ -19,9 +19,10 @@ int assem_cnt[2] = {0};
 char buffer[2][MAXLINE];
 char *iptr[2], *optr[2];
 
-// current order
+// order settings
 int order_cnt[2] = {0, 0, 0};
 char **orders[2];
+bool start_cnt = 0;
 
 // timer settings
 timer_t timer_cus[2];
@@ -441,15 +442,17 @@ void handle_message(char* recvline, int player_id){
     
     if(sscanf(recvline, "%s %d %d %d %d %d %d", obj, &from_x, &from_y, &to_x, &to_y, &to_loc, &action) == 7){
         if(strcmp(obj, "50") == 0){
-            // send first order
-            orders[0] = get_new_order(5);
-            orders[1] = get_new_order(5);
+            if(start_cnt == 0){
+                start_cnt = 1;
+                return;
+            }
+            // send first order to player[player_id]
             mes13(orders[0], 0, 0);
             mes13(orders[1], 1, 1);
             mes13(orders[0], 0, 1);
             mes13(orders[1], 1, 0);
 
-            //set customer timer
+            //set customer timer for player[player_id]
             timer_cus[0] = create_timer(sec_cus[0], sec_cus[0], 0, "cus", 0, 0);
             timer_cus[1] = create_timer(sec_cus[1], sec_cus[1], 1, "cus", 0, 0);
         }
@@ -893,7 +896,9 @@ main(int argc, char **argv)
             assem[0] = strdup("");
             assem[1] = strdup("");
 
-            // init order_cnt
+            // init order
+            orders[0] = get_new_order(5);
+            orders[1] = get_new_order(5);
             order_cnt[0] = 5;
             order_cnt[1] = 5;
             
