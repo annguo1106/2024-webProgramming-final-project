@@ -49,6 +49,7 @@ typedef struct S2C {
     // Order orders[15];  // new orders
     char orders[20][50];
     int time[20];
+    char message[500];
 } S2C;
 
 typedef struct Sprite {
@@ -72,15 +73,15 @@ const Sprite spConf[] = {
     {"c6", 164, 130, 1, 1, "src/c6.png"},  // 10
     {"c7", 164, 130, 1, 1, "src/c7.png"},  // 11
     {"cone", 10, 20, 0.5, 0.5, "src/cone.png"},  // 12
-    {"i1", 10, 20, 0.5, 0.5, "src/i1.png"},  // 13
-    {"i2", 10, 20, 0.5, 0.5, "src/i2.png"},  // 14
+    {"i1", 10, 20, 0.5, 0.5, "src/i2.png"},  // 13
+    {"i2", 10, 20, 0.5, 0.5, "src/i1.png"},  // 14
     {"i3", 10, 20, 0.5, 0.5, "src/i3.png"},  // 15
     {"let", 123, 687, 0.5, 0.5, "src/let.png"},  // 16 on assemb board
     {"meat", 123, 687, 0.5, 0.5, "src/meat.png"},  // 17
     {"s_t", 240, 687, 0.5, 0.5, "src/s_t.png"},  // 18 on chop board
     {"tomato", 240, 687, 0.5, 0.5, "src/tomato.png"},  // 19
-    {"let", 123, 687, 0.5, 0.5, "src/let.png"},  // 20 on shop board
-    {"s_t", 240, 687, 0.5, 0.5, "src/s_t.png"},  // 21 on assemb board
+    {"let", 240, 687, 0.5, 0.5, "src/let.png"},  // 20 on shop board
+    {"s_t", 123, 687, 0.5, 0.5, "src/s_t.png"},  // 21 on assemb board
 };
 
 #ifdef __cplusplus

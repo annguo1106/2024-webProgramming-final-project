@@ -30,7 +30,7 @@ void user_input (int X, int Y, char* obj) {
     mouseX = X;
     mouseY = Y;
     strcpy(handobj, obj);
-    printf("get obj %s\n", obj);
+    // printf("get obj %s\n", obj);
     pthread_mutex_unlock(&mutex);
 }
 
@@ -41,12 +41,10 @@ void connect2serv (char **argv) {
 	servaddr.sin_port = htons(SERV_PORT);
 	Inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 	Connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
-    // printf("connect success!\n");
-    
+
     memset(sendline, 0, MAXLINE);
     // if (Fgets(sendline, MAXLINE, stdin) == NULL) return;
     strcpy(sendline, argv[2]);
-    // printf("send to serv: %s\n", sendline);
     Writen(sockfd, sendline, strlen(sendline));
 }
 
@@ -54,8 +52,6 @@ void parse_server_inst (char* inst) {
     int op;
     char tmp[50];
     sscanf(inst, "%d %[^\n]", &op, tmp);
-    // printf("tmp: %s\n", tmp);
-    // printf("op = %d\n", op);
     if (op == 10) {
         servInst.op = 10;
         sscanf(tmp, "%d %d %d %s %d", &servInst.client, &servInst.toX, &servInst.toY, servInst.object, &servInst.location);
@@ -64,44 +60,41 @@ void parse_server_inst (char* inst) {
     else if (op == 11) {
         servInst.op = 11;
         sscanf(tmp, "%d %d %d %d %d %s", &servInst.client, &servInst.fromX, &servInst.fromY, &servInst.toX, &servInst.toY, servInst.object);
-        // printf("servinst: to %d %d\n", servInst.toX, servInst.toY);
     }
     else if (op == 12) {
         servInst.op = 12;
         sscanf(tmp, "%d %d", &servInst.client, &servInst.complete);
     }
     else if (op == 13) {
-        // printf("orders:\n");
         servInst.op = 13;
         char ttmp[100];
         sscanf(tmp, "%d %[^\n]", &servInst.client, ttmp);
-        // printf("tmp: %s", ttmp);
         char* token;
         token = strtok(ttmp, " ");
         int count = 0;
         while (token != NULL) {
-            // printf("count = %d\n", count);
-            // char* orderstr = strdup(token);
             if (count % 2 == 0) strcpy(servInst.orders[count/2], token);
             else servInst.time[count/2] = atoi(token);
-            // printf("token: %d %s\n", count, servInst.orders[count/2]);
-            // printf("token: %d %s\n", count, token);
-            // free(token);
             token = strtok(NULL, " ");
             count ++;
         }
     }
-    // else if (op == 14) {
-    //     servInst.op = 14;
-
-    // }
+    else if (op == 97) {  // msg + shutdown
+        servInst.op = 97;
+        sscanf(tmp, "%[^\n]", servInst.message);
+    }
+    else if (op == 98) {  // server msg
+        servInst.op = 98;
+        sscanf(tmp, "%[^\n]", servInst.message);
+    }
+    
 }
 
 void location (int x, int y, int* location, char* object) {
     *location = 6;
-    printf("now obj %s\n", object);
+    // printf("now obj %s\n", object);
     if (strcmp(object, "50") != 0) strcpy(object, "0");
-    printf("now obj %s\n", object);
+    // printf("now obj %s\n", object);
     if (x <= 90) {  // burger
         if (338 <= y && y <= 410) {  // lettuce
             if (premouseX <= 100 && 338 <= premouseY && premouseY <= 410) {
@@ -192,7 +185,7 @@ char* parse_input (int x, int y,char* input) {
     // location(premouseX, premouseY, &c2s.fromLoc, c2s.obj);
     memset(c2s.object, 0, sizeof(c2s.object));
     strcpy(c2s.object, handobj);
-    printf("hand obj = %s\n", c2s.object);
+    // printf("hand obj = %s\n", c2s.object);
     location(nowmouseX, nowmouseY, &c2s.toLoc, c2s.object);
     c2s.action = 0;
     if (preloc == 2 && c2s.toLoc == 2) {  // assemb
@@ -200,11 +193,7 @@ char* parse_input (int x, int y,char* input) {
         preloc = 6;
     }
     preloc = c2s.toLoc;
-    // printf("inst: %s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
-    // printf("hello?\n");
-    // char input[200];
     snprintf(input, 200, "%s %d %d %d %d %d %d\n", c2s.object, c2s.fromX, c2s.fromY, c2s.toX, c2s.toY, c2s.toLoc, c2s.action);
-    // printf("input: %s\n", input);
     return input;
 }
 
@@ -218,12 +207,10 @@ void pass_msg (int sockfd) {
         // user mouse action
         pthread_mutex_lock(&mutex);
         nowmouseX = mouseX; nowmouseY = mouseY;
-        // printf("now mouse x, y = %d, %d", nowmouseX, nowmouseY);
         if (nowmouseX != premouseX || nowmouseY != premouseY) {
-            // printf("mouse coord: %d, %d\n", nowmouseX, nowmouseY);
             char userInput[200];
             parse_input(nowmouseX, nowmouseY, userInput);
-            printf("send to server: %s\n", userInput);
+            printf("send to server: %s\n\n", userInput);
             Writen(sockfd, userInput, strlen(userInput));
         }
         pthread_mutex_unlock(&mutex);
@@ -233,15 +220,18 @@ void pass_msg (int sockfd) {
         int n = Select(sockfd+1, &rset, NULL, NULL, &tv);
         if (n > 0) {
             memset(recvline, 0, MAXLINE);
-            if (Readline(sockfd, recvline, MAXLINE) == 0)
+            int n;
+            if ((n = Readline(sockfd, recvline, MAXLINE)) == 0)
                 err_quit("str_cli: server terminated prematurely");
-            printf("get host msg: %s", recvline);
+            recvline[n] = '\0';
+            printf("get host msg: %s\n\n", recvline);
             parse_server_inst(recvline);
-            // printf("after parse server inst\n");
-            // add_msg(recvline);
-            printf("add msg to ui, op = %d\n", servInst.op);
-            // snprintf(input, 200, "%s %d %d %d %d %d %d\n", );
             add_msg(servInst);
+            if (servInst.op == 97) {  // shutdown
+                printf("get op = 97\n");
+                // sleep(5);
+                shutdown(sockfd, SHUT_WR);
+            }
         }
         premouseX = nowmouseX; premouseY = nowmouseY;
     }

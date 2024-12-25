@@ -13,25 +13,27 @@ std::mutex msg_mutex;
 S2C msg;
 
 void add_msg(S2C servInst) {
-    std::lock_guard<std::mutex> lock(msg_mutex);
+    // std::lock_guard<std::mutex> lock(msg_mutex);
     msg = servInst;
     // msg_queue.push(std::string(message));
-}
+} 
 
 int def_obj (string obj, int x) {
     if (obj == "l0") return 20;  // on chop board
     if (obj == "l1" && 210 <= x && x <= 340) return 20;  // on chop board
     if (obj == "l1" && 118 <= x && x <= 184) return 16;  // on assemb board
+    if (obj == "l1") return 16;
     if (obj == "t0") return 19;
     if (obj == "t1" && 210 <= x && x <= 340) return 18;  // on chop board
     if (obj == "t1" && 118 <= x && x <= 184) return 21;  // on assemb board
+    if (obj == "t1") return 21;
     if (obj == "m") return 17;
     if (obj == "b") return 4;
     if (obj == "c") return 12;
     if (obj == "b1111") return 0;
     if (obj == "b1011") return 1;
-    if (obj == "b0111") return 2;
-    if (obj == "b0011") return 3;
+    if (obj == "b0111") return 3;
+    if (obj == "b0011") return 2;
     if (obj == "i0") return 13;
     if (obj == "i1") return 14;
     if (obj == "i2") return 15;
@@ -41,26 +43,20 @@ int def_obj (string obj, int x) {
 
 
 void move (int client, float &x, float &y, float &tox, float &toy, float dt) {
-    // printf("move from %d %d to %d %d\n", x, y, tox, toy);
     if (x < tox) {
-        // printf("move cli %f %f to %d %d\n", x, y, tox, toy);
-        x += 50 * dt;
-        // printf("x added %d\n", x);
+        x += 100 * dt;
         if (x > tox) x = tox;
     }
     else if (x > tox) {
-        // printf("move cli %d %d\n", x, y);
-        x -= 50 * dt;
+        x -= 100 * dt;
         if (x < tox) x = tox;
     }
     if (x == tox && y < toy) {
-        // printf("move cli %d %d\n", x, y);
-        y += 50 * dt;
+        y += 100 * dt;
         if (y > toy) y = toy;
     }
     else if (x == tox && y > toy) {
-        // printf("move cli %d %d\n", x, y);
-        y -= 50 * dt;
+        y -= 100 * dt;
         if (y < toy) y = toy;
     }
 }
@@ -147,13 +143,11 @@ void run_ui() {
     bgSprite2.setPosition(600, 0);
     
     // object sprite for cli1
-    vector<bool> showSp1(20, false);
-    vector<bool> showSp2(20, false);
-    vector<sf::Texture> tx(20);
-    vector<sf::Sprite> sp1(20);
-    // printf("setting cli1 sprite\n");
-    for (int i = 0; i < 20; i++) {
-        // printf("setting sprite %s\n", spConf[i].name);
+    vector<bool> showSp1(22, false);
+    vector<bool> showSp2(22, false);
+    vector<sf::Texture> tx(22);
+    vector<sf::Sprite> sp1(22);
+    for (int i = 0; i < 22; i++) {
         if (!tx[i].loadFromFile(std::string(spConf[i].path))) {
             std::cerr << "Error: Could not load background image.\n";
             return;
@@ -164,12 +158,10 @@ void run_ui() {
     }
 
     // object sprite for cli2
-    vector<sf::Sprite> sp2(20);
-    // printf("setting cli2 sprite\n");
-    for (int i = 0; i < 20; i++) {
-        // printf("setting sprite %s\n", spConf[i].name);
+    vector<sf::Sprite> sp2(22);
+    for (int i = 0; i < 22; i++) {
         sp2[i].setTexture(tx[i]);
-        sp2[i].setPosition(spConf[i].x, spConf[i].y);
+        sp2[i].setPosition(spConf[i].x + 600, spConf[i].y);
         sp2[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
     }
     
@@ -206,22 +198,17 @@ void run_ui() {
     int row1 = 0, row2 = 0;
     int leav1x = 0;
     int leav2x = 600;
-    // printf("customer sp setup\n");
 
     // set clock
     sf::Clock clock;
     sf::Clock clock1, clock2;
 
     msg.op = -1;
-    // std::vector<std::string> displayed_messages;
-    printf("add user input 50\n");
     user_input(1, 1, "50");
     while (ui_running && window.isOpen()) {
         // update clock
         sf::Time deltaTime = clock.restart();
         float dt = deltaTime.asSeconds();
-        // printf("dt: %f\n", dt);
-
         // update events
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -236,8 +223,8 @@ void run_ui() {
                     int y = event.mouseButton.y;
                     char str[200];
                     // displayed_message = "mouse pressed\n";
-                    snprintf(str, sizeof(str), "click at %d %d\n", x, y);
-                    displayed_message = str;
+                    // snprintf(str, sizeof(str), "click at %d %d\n", x, y);
+                    // displayed_message = str;
                     if (!cli1take) strcpy(handobj, "0");
                     if (!cli1moving) user_input(x, y, handobj);
                 }
@@ -246,48 +233,56 @@ void run_ui() {
 
         // Retrieve messages from the queue
         {
-            std::lock_guard<std::mutex> lock(msg_mutex);
+            // std::lock_guard<std::mutex> lock(msg_mutex);
             // printf("retrieve msg\n");
             if (msg.op != -1) {
-                char str[50];
-                snprintf(str, sizeof(str), "%d", msg.op);
-                printf("received op = %d\n", msg.op);
-                displayed_message = str;
+                // char str[50];
+                // snprintf(str, sizeof(str), "%d", msg.op);
+                // // printf("received op = %d\n", msg.op);
+                // displayed_message = str;
                 int obj;
                 if (msg.op == 10) {  // update object status
                     obj = def_obj(msg.object, msg.toX); 
-                    printf("obj is %d %s\n", obj, msg.object);
-                    printf("msg location %d\n", msg.location);
+                    printf("now obj is %d %s, location: %d, tox: %d\n", obj, msg.object, msg.location, msg.toX);
                     if (msg.location) {  // not hand
                         if (strcmp(msg.object, "empty") != 0) {
-                            if (msg.client == 0) showSp1[obj] = 1;
-                            else showSp2[obj] = 1;
+                            // printf("obj is %d\n", obj);
+                            if (msg.client == 0) {
+                                showSp1[obj] = 1;
+                                printf("cli1 show %d\n", obj);
+                            }
+                            else {
+                                showSp2[obj] = 1;
+                                printf("cli2 show %d\n", obj);
+                            }
                         }
                         else {  // clear obj
-                            // printf("in clear sooooope\n");
-                            // printf("clear object %d at %d, %d", obj, msg.toX, msg.toY);
-                            snprintf(str, sizeof(str), "clear obj %d", obj);
-                            displayed_message = str;
+                            // printf("clear obj\n");
+                            // snprintf(str, sizeof(str), "clear obj %d\n", obj);
+                            // displayed_message = str;
                             if (msg.client == 0) {
                                 if (msg.toX <= 195) {  // clear on assemb
                                     printf("clear assemb\n");
-                                    for (int i = 0; i < 20; i++)
+                                    for (int i = 0; i < 22; i++)
                                         if (spConf[i].x == 123) showSp1[i] = 0;
                                 }
                                 else {  // clear on chop
-                                    printf("clear chop");
-                                    for (int i = 0; i < 20; i++) {
+                                    printf("clear chop\n");
+                                    for (int i = 0; i < 22; i++) {
                                         if (spConf[i].x == 240) showSp1[i] = 0;
                                     }
                                 }
                             }
                             else {
+                                printf("clear cli2\n");
                                 if (msg.toX <= 195) {  // clear on assemb
-                                    for (int i = 0; i < 20; i++)
+                                    printf("clear assemb\n");
+                                    for (int i = 0; i < 22; i++)
                                         if (spConf[i].x == 123) showSp2[i] = 0;
                                 }
                                 else {  // clear on chop
-                                    for (int i = 0; i < 20; i++) {
+                                    printf("clear chop\n");
+                                    for (int i = 0; i < 22; i++) {
                                         if (spConf[i].x == 240) showSp2[i] = 0;
                                     }
                                 }
@@ -295,7 +290,8 @@ void run_ui() {
                         }
                     }
                     else {  // update hand obj
-                        if (!obj) {  // clear
+                        printf("update hand\n");
+                        if (obj == 50) {  // clear
                             if (msg.client == 0) {
                                 cli1take = 0; 
                             }
@@ -304,15 +300,18 @@ void run_ui() {
                             }
                         }
                         else {
+                            printf("obj: %d\n", obj);
                             if (msg.client == 0) {
                                 cli1take = 1;
                                 strcpy(handobj, msg.object);
+                                // obj = def_obj(msg.object, msg.toX); 
                                 cli1hand.setTexture(tx[obj]);
                                 cli1hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
                             }
                             else {
                                 cli2take = 1;
                                 strcpy(handobj, msg.object);
+                                // obj = def_obj(msg.object, msg.toX); 
                                 cli2hand.setTexture(tx[obj]);
                                 cli2hand.setScale(spConf[obj].scaleX, spConf[obj].scaleY);
                             }
@@ -321,7 +320,6 @@ void run_ui() {
                 }
                 else if (msg.op == 11) { // move character
                     if (msg.client == 0) {
-                        printf("msg tox toy = %d %d\n", msg.toX, msg.toY);
                         cli1tox = msg.toX - 58;
                         cli1toy = msg.toY - 75;
                         
@@ -329,7 +327,6 @@ void run_ui() {
                         if (cli1tox < 90) cli1tox = 90;
                         if (cli1toy > 530) cli1toy = 530;
                         if (cli1toy < 355) cli1toy = 355;
-                        printf("cli1 move from %.1f %.1f to %.1f %.1f\n", cli1x, cli1y, cli1tox, cli1toy);
                         cli1moving = 1;
                     }
                     else {
@@ -339,7 +336,7 @@ void run_ui() {
                         if (cli2tox < 690) cli2tox = 690;
                         if (cli2toy > 530) cli2toy = 530;
                         if (cli2toy < 335) cli2toy = 335;
-                        printf("cli2 move from %.1f %.1f to %.1f %.1f\n", cli2x, cli2y, cli2tox, cli2toy);
+                        // printf("cli2 move from %.1f %.1f to %.1f %.1f\n", cli2x, cli2y, cli2tox, cli2toy);
                     }
                 }
                 else if (msg.op == 12) {  // update customer
@@ -367,7 +364,7 @@ void run_ui() {
                         clock1.restart();
                     }
                     else {
-                        printf("set up cust2\n");
+                        // printf("set up cust2\n");
                         stcust2 = 0;
                         mvx2 = 1200;
                         row2 = 0;
@@ -377,6 +374,11 @@ void run_ui() {
                         }
                         clock2.restart();
                     }
+                }
+                else if (msg.op == 98 || msg.op == 97) {
+                    char str[500];
+                    strcpy(str, msg.message);
+                    displayed_message = str;
                 }
                 // displayed_message = msg.op;
                 msg.op = -1;
@@ -405,9 +407,14 @@ void run_ui() {
         if (cli1take) window.draw(cli1hand);
         if (cli2take) window.draw(cli2hand);
         // draw objects
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 22; i++) {
             if (showSp1[i]) {
                 window.draw(sp1[i]);
+            }
+        }
+        for (int i = 0; i < 22; i++) {
+            if (showSp2[i]) {
+                window.draw(sp2[i]);
             }
         }
         // draw custoer

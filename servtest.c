@@ -25,6 +25,8 @@ void chat_serv(){
         }
         else err_sys("accept error");
     }
+    if (Readline(connfd, sendline, MAXLINE) == 0)
+        err_quit("str_cli: server terminated prematurely");
     // main
     while(1) {
         // Writen to first cli
@@ -33,7 +35,6 @@ void chat_serv(){
         printf("send this to client: %s", sendline);
         Writen(connfd, sendline, strlen(sendline));
     }
-    
 }
 
 int main(){
