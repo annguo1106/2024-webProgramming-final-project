@@ -63,6 +63,7 @@ void parse_server_inst (char* inst) {
     else if (op == 11) {
         servInst.op = 11;
         sscanf(tmp, "%d %d %d %d %d %s", &servInst.client, &servInst.fromX, &servInst.fromY, &servInst.toX, &servInst.toY, servInst.object);
+        // printf("servinst: to %d %d\n", servInst.toX, servInst.toY);
     }
     else if (op == 12) {
         servInst.op = 12;

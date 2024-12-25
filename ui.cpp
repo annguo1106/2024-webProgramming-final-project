@@ -40,7 +40,8 @@ int def_obj (string obj, int x) {
 }
 
 
-void move (int client, float &x, float &y, int &tox, int &toy, float dt) {
+void move (int client, float &x, float &y, float &tox, float &toy, float dt) {
+    // printf("move from %d %d to %d %d\n", x, y, tox, toy);
     if (x < tox) {
         // printf("move cli %f %f to %d %d\n", x, y, tox, toy);
         x += 50 * dt;
@@ -150,9 +151,9 @@ void run_ui() {
     vector<bool> showSp2(20, false);
     vector<sf::Texture> tx(20);
     vector<sf::Sprite> sp1(20);
-    printf("setting cli1 sprite\n");
+    // printf("setting cli1 sprite\n");
     for (int i = 0; i < 20; i++) {
-        printf("setting sprite %s\n", spConf[i].name);
+        // printf("setting sprite %s\n", spConf[i].name);
         if (!tx[i].loadFromFile(std::string(spConf[i].path))) {
             std::cerr << "Error: Could not load background image.\n";
             return;
@@ -164,9 +165,9 @@ void run_ui() {
 
     // object sprite for cli2
     vector<sf::Sprite> sp2(20);
-    printf("setting cli2 sprite\n");
+    // printf("setting cli2 sprite\n");
     for (int i = 0; i < 20; i++) {
-        printf("setting sprite %s\n", spConf[i].name);
+        // printf("setting sprite %s\n", spConf[i].name);
         sp2[i].setTexture(tx[i]);
         sp2[i].setPosition(spConf[i].x, spConf[i].y);
         sp2[i].setScale(spConf[i].scaleX, spConf[i].scaleY);
@@ -189,8 +190,8 @@ void run_ui() {
     cli2.setTexture(cli2tex);
     float cli1x = 228, cli1y = 470;
     float cli2x = 870, cli2y = 470;
-    int cli1tox = 228, cli1toy = 470;
-    int cli2tox = 870, cli2toy = 470;
+    float cli1tox = 228, cli1toy = 470;
+    float cli2tox = 870, cli2toy = 470;
     bool cli1take = 0, cli2take = 0;
     char handobj[50];
     cli1.setPosition(int(cli1x), int(cli1y));
@@ -318,21 +319,25 @@ void run_ui() {
                 }
                 else if (msg.op == 11) { // move character
                     if (msg.client == 0) {
+                        printf("msg tox toy = %d %d\n", msg.toX, msg.toY);
                         cli1tox = msg.toX - 58;
                         cli1toy = msg.toY - 75;
+                        
                         if (cli1tox > 380) cli1tox = 380;
                         if (cli1tox < 90) cli1tox = 90;
                         if (cli1toy > 530) cli1toy = 530;
                         if (cli1toy < 355) cli1toy = 355;
+                        printf("cli1 move from %.1f %.1f to %.1f %.1f\n", cli1x, cli1y, cli1tox, cli1toy);
                         cli1moving = 1;
                     }
                     else {
-                        cli2tox = msg.toX - 58;
+                        cli2tox = msg.toX + 600 - 58;
                         cli2toy = msg.toY - 75;
-                        if (cli2tox > 990) cli2tox = 990; 
-                        if (cli2tox < 650) cli2tox = 650;
-                        if (cli2toy > 1118) cli2toy = 1118;
-                        if (cli2toy < 955) cli2toy = 955;
+                        if (cli2tox > 980) cli2tox = 980; 
+                        if (cli2tox < 690) cli2tox = 690;
+                        if (cli2toy > 530) cli2toy = 530;
+                        if (cli2toy < 335) cli2toy = 335;
+                        printf("cli2 move from %.1f %.1f to %.1f %.1f\n", cli2x, cli2y, cli2tox, cli2toy);
                     }
                 }
                 else if (msg.op == 12) {  // update customer
