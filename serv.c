@@ -20,8 +20,10 @@ char buffer[2][MAXLINE];
 char *iptr[2], *optr[2];
 
 // order settings
+// order settings
 int order_cnt[2] = {0, 0, 0};
 char **orders[2];
+bool start_cnt = 0;
 bool start_cnt = 0;
 
 // timer settings
@@ -310,7 +312,9 @@ void mes12(int player_id, int complete, int sendto){
 void mes13(char **order, int player_id, int sendto){
     char sendline[MAXLINE], str_sec[10];
     bool isSelf = (player_id != sendto);
+    bool isSelf = (player_id != sendto);
     snprintf(str_sec, sizeof(str_sec), "%d", sec_cus[player_id]);
+    snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
     snprintf(sendline, sizeof(sendline), "13 %d", isSelf);
     for(int i=0; i<5; i++){
         strcat(sendline, " ");
