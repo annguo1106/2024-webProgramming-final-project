@@ -82,6 +82,8 @@ void parse_server_inst (char* inst) {
     else if (op == 97) {  // msg + shutdown
         servInst.op = 97;
         sscanf(tmp, "%[^\n]", servInst.message);
+        // sscanf(tmp, "%d", servInst.action);
+        // servInst.action = 
     }
     else if (op == 98) {  // server msg
         servInst.op = 98;
@@ -204,6 +206,7 @@ void pass_msg (int sockfd) {
     tv.tv_usec = 1000;
     FD_ZERO(&rset);
     while (1) {
+        // printf("while\n");
         // user mouse action
         pthread_mutex_lock(&mutex);
         nowmouseX = mouseX; nowmouseY = mouseY;
@@ -219,18 +222,21 @@ void pass_msg (int sockfd) {
         FD_SET(sockfd, &rset);
         int n = Select(sockfd+1, &rset, NULL, NULL, &tv);
         if (n > 0) {
+            // printf("select detect\n");
             memset(recvline, 0, MAXLINE);
             int n;
             if ((n = Readline(sockfd, recvline, MAXLINE)) == 0)
                 err_quit("str_cli: server terminated prematurely");
-            recvline[n] = '\0';
-            printf("get host msg: %s\n\n", recvline);
+            // recvline[n] = '\0';
+            printf("get host msg: %s", recvline);
             parse_server_inst(recvline);
             add_msg(servInst);
             if (servInst.op == 97) {  // shutdown
-                printf("get op = 97\n");
-                // sleep(5);
+                // printf("get op = 97\n");
+                sleep(3);
                 shutdown(sockfd, SHUT_WR);
+                // Close(sockfd);
+                break;
             }
         }
         premouseX = nowmouseX; premouseY = nowmouseY;

@@ -375,7 +375,18 @@ void run_ui() {
                         clock2.restart();
                     }
                 }
-                else if (msg.op == 98 || msg.op == 97) {
+                // else if (msg.op == 97) {
+                //     char str[500];
+                //     if (msg.action == 0) { // win
+                //         strcpy(str, "you win!\n");
+                //         displayed_message = str;
+                //     }
+                //     else {
+                //         strcpy(str, "you lose!\n");
+                //         displayed_message = str;
+                //     }
+                // }
+                else if (msg.op == 98 || msg.op == 98) {
                     char str[500];
                     strcpy(str, msg.message);
                     displayed_message = str;
