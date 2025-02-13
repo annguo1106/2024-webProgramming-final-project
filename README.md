@@ -2,7 +2,13 @@
 授課教授：嚴力行
 1. introduction:
 This is a game inspired by Overcooked and implemented using socket programming.
-2. architecture:
+2. demo
+
+<img src="Assets/game.png" width=50%>
+
+- The player can control the character in the left window to complete orders, while the right window synchronously displays the opponent's status.
+
+3. architecture
    
    <img src="Assets/architecture.png" width=50%>
 4. workflow
