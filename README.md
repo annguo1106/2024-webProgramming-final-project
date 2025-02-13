@@ -3,15 +3,16 @@
 1. introduction:
 This is a game inspired by Overcooked and implemented using socket programming.
 2. architecture:
+   
    <img src="Assets/architecture.png" width=50%>
-3. workflow
+4. workflow
    - overall
      
      <img src="Assets/overallWorkflow.png" width=50%>
    - when ordering hamburger
      
      <img src="Assets/hamburgerWorkflow.png" width=50%>
-4. env setup
+5. env setup
    - build up SFML
     ```shell
     sudo apt update && sudo apt upgrade
