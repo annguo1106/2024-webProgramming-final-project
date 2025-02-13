@@ -6,8 +6,10 @@ This is a game inspired by Overcooked and implemented using socket programming.
    <img src="Assets/architecture.png" width=50%>
 3. workflow
    - overall
+     
      <img src="Assets/overallWorkflow.png" width=50%>
    - when ordering hamburger
+     
      <img src="Assets/hamburgerWorkflow.png" width=50%>
 4. env setup
    - build up SFML
