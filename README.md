@@ -1,5 +1,16 @@
-# webProgramming
-1. steps to build up SFML
+# NYCU webProgramming 2024 final project
+授課教授：嚴力行
+1. introduction:
+This is a game inspired by Overcooked and implemented using socket programming.
+2. architecture:
+   <img src="Assets/architecture" width=50%>
+3. workflow
+   - overall
+     <img src="Assets/overallWorkflow" width=50%>
+   - when ordering hamburger
+     <img src="Assets/hamburgerWorkflow" width=50%>
+4. env setup
+   - build up SFML
     ```shell
     sudo apt update && sudo apt upgrade
     
@@ -12,17 +23,11 @@
 
     # install SFML
     sudo apt install libsfml-dev
-    
-    # compile (sfml is made of 5 modules: system, window, graphics, network, audio)
-    g++ -c ui.cpp
-    g++ ui.o -o ui -lsfml-graphics -lsfml-window -lsfml-system
-
-    # execute
-    ./ui
     ```
-
-
-```shell
-make serv
-./serv
-```
+    - build the project
+    ```shell
+    make client
+    make serv
+    ./serv
+    ./client 127.0.0.1 ${client_name}
+    ```
